@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 
+# to use gpu on M1 run the script with this prefix PYTORCH_ENABLE_MPS_FALLBACK=1 python your_script.py
+
+"""
+todo Try updating python the 3.8 does not work well with the mps
+The mps is memory related issue. Try reducing the barch size
+
+"""
+
 from transformers import VisionEncoderDecoderModel, GPT2TokenizerFast, AutoFeatureExtractor, \
     TrainingArguments, Trainer
 # todo look into what this data collector does
@@ -12,6 +20,24 @@ import ipywidgets as widgets
 import numpy as np
 import evaluate
 from IPython.core.display_functions import display
+
+
+
+ds = datasets.load_dataset("ydshieh/coco_dataset_script", "2017", data_dir="./dummy_data/")
+
+print()
+
+
+
+
+
+
+
+
+
+
+
+
 
 # ## Model
 
@@ -31,9 +57,11 @@ model.to(device)
 
 #Database
 # The image captioning algorithm is trained on the COCO dataset which consists of images and captions.
-
+print('---------------------Loading database')
 COCO_DIR = '/Users/yesidcano/repos/image-captioning/data/coco'
-ds = datasets.load_dataset("ydshieh/coco_dataset_script", "2017", data_dir=COCO_DIR, split="train[10:70]")
+ds = datasets.load_dataset("ydshieh/coco_dataset_script", "2017", data_dir=COCO_DIR, split="train[4000:4100]")
+
+print('---------Finished loading database-------------')
 
 
 #Data processing
@@ -83,14 +111,14 @@ def preprocess_fn(examples):
 processed_dataset = ds.map(
     function=preprocess_fn,
     batched=True,
-    batch_size=50,
+    #batch_size=50,
     # remove_columns=['image_id', 'caption_id', 'caption', 'height', 'width', 'file_name', 'coco_url', 'image_path']
 
 )
 
 
 # By default data are shuffled.
-processed_dataset = processed_dataset.train_test_split(test_size=0.1)
+processed_dataset = processed_dataset.train_test_split(test_size=0.05)
 
 # freeze layer of the encoder (Assuming that the model is already good at understanding images). Since all cross-attention weights need to be optimized
 # I do not freeze any of the decoder layers.
@@ -112,7 +140,7 @@ bleu_metric = evaluate.load("bleu")
 def metrics(pred_labels):
     """
      Process the predicted captions and the labels (image captions) used to compute the metrics.
-    :param pred_labels: set of predicted and target tokens. Type: transformers.trainer_utils.EvalPrediction
+    :param pred_labels: EvaluationPredition object: named tupple with predictions and label_ids field.
     :return: a dictionary with the resulting metric values.
     """
     results={}
@@ -146,18 +174,19 @@ def metrics(pred_labels):
 #Training Procedure:
 
 
-
+# reports evaluation metrics at the end of each epoch on top of the training loss.
 training_arg = TrainingArguments(
     output_dir='../models/swin_image_captioning',  # dicts output
     overwrite_output_dir=True,
     num_train_epochs=2,
-    per_device_train_batch_size=64,  # training batch size
-    per_device_eval_batch_size=64,  # evaluation batch size
+    per_device_train_batch_size=16,  # training batch size todo try batch size 4
+    per_device_eval_batch_size=16,  # evaluation batch size
     load_best_model_at_end=True,
     log_level='info',
-    logging_steps=50,
-    evaluation_strategy='epoch',
+    logging_steps=10,
+    evaluation_strategy='epoch', # set to 'steps' and the specify eval_steps=500,. This will give more data to plot
     save_strategy='epoch',
+    use_mps_device=True,  # use Apple Silicon
 )
 
 trainer = Trainer(
@@ -174,15 +203,18 @@ trainer = Trainer(
 
 trainer.evaluate()
 
+print('Started training')
 
+#Resume fine-tuning from the last checkpoint
 
+#trainer.train(resume_from_checkpoint=True)
 
 # 4 epochs took 8 hours
 trainer.train()
 
 
 #TODO create graphic of metrics per epoch. x axis epoch number and y axis value of the matric
-
+# todo use the test set for evaluation. See chapter 2 ctrl f = preds_output
 
 trainer.save_model()
 
@@ -233,7 +265,7 @@ def generate_caption(m, path):
 captions, model_output, img_transformed = generate_caption(  # Out of sample photo
     finetuned_model, '../data/test_data/000000421195_test.jpg'
 )
-print()
+print(captions)
 
 
 

@@ -15,3 +15,5 @@ torchaudio==2.0.0.dev20230116
 torchvision==0.15.0.dev20230116
 transformers==4.23.1
 webencodings==0.5.1
+seaborn==0.12.2
+seaborn-base==0.12.2
