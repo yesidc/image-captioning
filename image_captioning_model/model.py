@@ -129,7 +129,7 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
 
     def __str__(self):
 
-        return f'This model uses a pre-trained encoder of type {type(ImageCaptioningModel.model.encoder)} and pre-trained decoder of type {type(ImageCaptioningModel.decoder)}'
+        return f'This model uses a pre-trained encoder of type {type(ImageCaptioningModel.model.encoder)} and pre-trained decoder of type {type(ImageCaptioningModel.model.decoder)}'
 
 
 class GenerateCaptions(DataProcessing):

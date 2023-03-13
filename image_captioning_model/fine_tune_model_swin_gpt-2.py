@@ -1,8 +1,17 @@
 #!/usr/bin/env python
+#PYTORCH_ENABLE_MPS_FALLBACK=1 PYTHONPATH=$PYTHONPATH:./model.py python fine_tune_model_swin_gpt-2.py
+
+
+
+# todo modify environmental variable PYTHONPATH
 
 from transformers import TrainingArguments, Trainer
 import datasets
-from image_captioning_model.model import ImageCaptioningModel
+
+try:
+    from image_captioning_model.model import ImageCaptioningModel
+except ModuleNotFoundError:
+    from model import ImageCaptioningModel
 
 
 
@@ -34,7 +43,7 @@ training_arg = TrainingArguments(
     logging_steps=10,
     evaluation_strategy='epoch',  # set to 'steps' and the specify eval_steps=500,. This will give more data to plot
     save_strategy='epoch',
-    # use_mps_device=True,  # use Apple Silicon
+    use_mps_device=True,  # use Apple Silicon
 )
 
 trainer = Trainer(
