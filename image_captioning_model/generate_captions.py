@@ -13,7 +13,7 @@ except ModuleNotFoundError:
 finetuned_model = VisionEncoderDecoderModel.from_pretrained('../models/swin_image_captioning')
 generate_captions = GenerateCaptions()
 
-captions, model_output, img_transformed = generate_captions(  # Out of sample photo
+captions, model_output, img_transformed = generate_captions(
     finetuned_model, '../data/test_data/000000421195_test.jpg'
 )
 print(captions)

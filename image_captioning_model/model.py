@@ -1,3 +1,5 @@
+from logger_image_captioning import logger
+import logging
 from transformers import GPT2TokenizerFast, VisionEncoderDecoderModel
 from PIL import Image
 import torch
@@ -6,6 +8,10 @@ import numpy as np
 import evaluate
 from IPython.core.display_functions import display
 
+
+
+# create logger
+logger = logging.getLogger('image_captioning')
 
 class MetricsMixin():
 
@@ -55,7 +61,8 @@ class DataSetMixin():
             # remove_columns=['image_id', 'caption_id', 'caption', 'height', 'width', 'file_name', 'coco_url', 'image_path']
 
         )
-        print(f'Data processing finished {processed_dataset}')
+        logger.info(f'Data processing finished {processed_dataset}')
+        # processed_dataset = processed_dataset.train_test_split(test_size=0.05)
         return processed_dataset
 
 
@@ -97,13 +104,6 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
         'distilgpt2'
     )
 
-    # Device
-    device = torch.device("mps")
-    model.to(device)
-
-    def __init__(self):
-        super().__init__()
-
     # Model config
     def model_config(self):
 
@@ -122,7 +122,17 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
                 break
             param.requires_grad = False
 
-    def __call__(self, ds, *args, **kwargs):
+    def __call__(self, ds, device_type, *args, **kwargs):
+
+        if device_type == 'mps':
+            device = torch.device("mps")
+        else:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        logger.info(f'Device {device}')
+
+        ImageCaptioningModel.model.to(device)
+
         self.model_config()
         self.freeze_layer()
         self.processed_dataset = self.processed_dataset(ds)
@@ -133,9 +143,6 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
 
 
 class GenerateCaptions(DataProcessing):
-
-    def __init__(self):
-        super().__init__()
 
     # a helper function to generate captions
     def __call__(self, tuned_model, path, *args, **kwargs):
