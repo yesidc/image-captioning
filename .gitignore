@@ -135,3 +135,6 @@ dmypy.json
 
 # exlcude IDE files
 .idea/
+
+./Notebooks/image_captioning_model_swin_gpt.ipynb
+./Notebooks/Swin.ipynb
