@@ -1,6 +1,6 @@
 from logger_image_captioning import logger
 import logging
-from transformers import GPT2TokenizerFast, VisionEncoderDecoderModel
+from transformers import  VisionEncoderDecoderModel, GPT2TokenizerFast
 from PIL import Image
 import torch
 import torchvision.transforms as transforms
@@ -146,7 +146,9 @@ class GenerateCaptions(DataProcessing):
 
     # a helper function to generate captions
     def __call__(self, tuned_model, path, *args, **kwargs):
-        img = Image.open(path).convert('RGB')
+        img = Image.open(path)
+        if img.mode != "RGB":
+            img = Image.open(path).convert('RGB')
         img_transformed = self.transform(img).unsqueeze(0)
         # tensor dimensions max_lenght X num_return_sequences, where ij == some_token_id
         # todo use kwargs to pass these parameters

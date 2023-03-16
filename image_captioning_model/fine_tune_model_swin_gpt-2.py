@@ -83,7 +83,7 @@ def train_model(COCO_DIR, dummy_data=False, device_type='mps'):
     logger.info('Finished fine tuning the model')
     trainer.save_model()
 
-    # Save the tokenizer
+    # Save the tokenizer: saves these files preprocessor_config.json, vocab.json special_tokens.json merges.txt
     image_captioning_model.tokenizer.save_pretrained('../models/swin_image_captioning')
 
 
