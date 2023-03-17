@@ -53,15 +53,17 @@ class MetricsMixin():
 
 class DataSetMixin():
     def processed_dataset(self, ds):
+        logger.info('Start data preprocessing (mapping operation)')
         processed_dataset = ds.map(
             function=self.preprocess_fn,
             batched=True,
             remove_columns=ds['train'].column_names,
+            # cache_file_name="processed_cache.arrow" name of the file where the processed data is to be cached
             # batch_size=50,
             # remove_columns=['image_id', 'caption_id', 'caption', 'height', 'width', 'file_name', 'coco_url', 'image_path']
 
         )
-        logger.info(f'Data processing finished {processed_dataset}')
+        logger.info(f'Data preprocessing finished {processed_dataset}')
         # processed_dataset = processed_dataset.train_test_split(test_size=0.05)
         return processed_dataset
 
@@ -71,6 +73,7 @@ class DataProcessing():
         # gpt-2 tokenizer
         self.tokenizer = GPT2TokenizerFast.from_pretrained('distilgpt2')
         self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.counter = 0
         # Define the transforms to be applied to the images
         self.transform = transforms.Compose([
 
@@ -79,8 +82,16 @@ class DataProcessing():
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
         ])
-
+    # 'D:\\huggingface-cache\\datasets\\downloads\\extracted\\0597725cffd24e89bfdd4a70cd41da03bd03b1a51103231a562152480846df2b\\train2017\\000000203564.jpg',
+    # 'C:\\Users\\yesid\\.cache\\huggingface\\datasets\\downloads\\extracted\\0597725cffd24e89bfdd4a70cd41da03bd03b1a51103231a562152480846df2b\\train2017\\000000203564.jpg'
+    #  'C:\\Users\\yesid\\.cache\\huggingface\\datasets\\downloads\\extracted\\0597725cffd24e89bfdd4a70cd41da03bd03b1a51103231a562152480846df2b\\train2017\\000000005247.jpg'
     def preprocess_fn(self, examples):
+
+        if self.counter == 0:
+            logger.info(f"CACHE PATH: {examples['image_path'][0]}")
+            self.counter +=1
+
+
         # Swin expects pixel_values instead of input_ids
         examples['pixel_values'] = [self.transform(Image.open(path).convert('RGB')) for path in examples['image_path']]
         # todo set this parameter to the average length of the captions

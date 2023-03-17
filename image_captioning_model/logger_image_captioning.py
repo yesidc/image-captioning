@@ -13,7 +13,7 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
 
 # create formatter and add it to the handlers
-formatter = logging.Formatter('[%(levelname)s] %(filename)s %(funcName)s  %(lineno)d: %(message)s')
+formatter = logging.Formatter('[%(levelname)s] %(asctime)s %(filename)s %(funcName)s  %(lineno)d: %(message)s')
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 
