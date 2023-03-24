@@ -5,13 +5,13 @@
 import logging
 from logger_image_captioning import logger
 
-from transformers import TrainingArguments, Trainer, EarlyStoppingCallback
+from transformers import TrainingArguments, Trainer, EarlyStoppingCallback, VisionEncoderDecoderModel
 import datasets
 
 try:
-    from image_captioning_model.model import ImageCaptioningModel
+    from image_captioning_model.model import ImageCaptioningModel,GenerateCaptions
 except ModuleNotFoundError:
-    from model import ImageCaptioningModel
+    from model import ImageCaptioningModel,GenerateCaptions
 
 # Create logger
 logger = logging.getLogger('image_captioning')
@@ -29,10 +29,16 @@ def train_model(COCO_DIR, dummy_data=False, device_type='mps'):
     if dummy_data:
         ds = datasets.load_dataset("ydshieh/coco_dataset_script", "2017", data_dir="./dummy_data/")
     else:
-        ds = datasets.load_dataset("ydshieh/coco_dataset_script", "2017", data_dir=COCO_DIR, split="train[4000:4100]")
+        ds = datasets.load_dataset("ydshieh/coco_dataset_script", "2017", data_dir=COCO_DIR, split="validation")
 
     logger.info(f'Dataset loaded successfully: {ds}')
 
+
+    def compute_metric():
+        evaluation_metrics = GenerateCaptions(VisionEncoderDecoderModel.from_pretrained('../models/swin_image_captioning'))
+        evaluation_metrics.evaluate_predictions(ds)
+        print()
+    compute_metric()
     # Create instance of the image captioning model
     image_captioning_model = ImageCaptioningModel()
 
@@ -46,18 +52,22 @@ def train_model(COCO_DIR, dummy_data=False, device_type='mps'):
     training_arg = TrainingArguments(
         output_dir='../models/swin_image_captioning',  # dicts output
         overwrite_output_dir=True,
-        num_train_epochs=2,
+        num_train_epochs=1,
         per_device_train_batch_size=16,  # training batch size todo try batch size 4
-        per_device_eval_batch_size=16,  # evaluation batch size
+        per_device_eval_batch_size=16,  # evaluation batch size # todo use bigger batch size
         load_best_model_at_end=True,
         logging_dir='./logs',  # directory for storing logs
         logging_steps=10,
-        log_level='info',
+        log_level='debug',
         evaluation_strategy='epoch',
         save_strategy='epoch',
         # use_mps_device=True,  # use Apple Silicon
     )
+    #to compute the number of total steps devide the number of datapoints by the batch size and multiply by the number of epochs
 
+    # Add a file handler to the logger
+    file_handler = logging.FileHandler(training_arg.logging_dir + '/training.log')
+    logger.addHandler(file_handler)
     # Check that the model is on the GPU
     logger.info(
         f'Model is on the GPU {next(image_captioning_model.model.parameters()).device}')  # should print "cuda:0 / mps:0" if on GPU
@@ -74,8 +84,8 @@ def train_model(COCO_DIR, dummy_data=False, device_type='mps'):
 
     trainer.evaluate()
 
-    # Resume fine-tuning from the last checkpoint
-    # trainer.train(resume_from_checkpoint=True)
+    # Resume fine-tuning from the last checkpoint. if by the time of the interruption it was on epoch 5, it continuos from there until num total epochs
+    #trainer.train(resume_from_checkpoint=True)
 
     # 4 epochs took 8 hours
     trainer.train()
