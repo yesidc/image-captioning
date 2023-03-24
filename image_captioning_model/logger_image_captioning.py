@@ -5,7 +5,7 @@ logger = logging.getLogger('image_captioning')
 logger.setLevel(logging.DEBUG)
 
 # create file handler which logs messages to a file
-fh = logging.FileHandler('pipeline_image_caption.log')
+fh = logging.FileHandler('swin_F_1_GPT_E_5_image_captioning.log')
 fh.setLevel(logging.DEBUG)
 
 # create console handler with a higher log level

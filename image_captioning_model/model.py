@@ -21,6 +21,9 @@ class MetricsMixin():
         :param pred_labels: EvaluationPredition object: named tupple with predictions and label_ids field.
         :return: a dictionary with the resulting metric values.
         """
+        print(f'Number of datapoints passed to the metrics function{pred_labels.label_ids.shape}')
+        print(f'Predictions shape: {pred_labels.predictions[0].shape}')
+
         rouge_metric = evaluate.load("rouge")
         bleu_metric = evaluate.load("bleu")
         results = {}
@@ -31,12 +34,12 @@ class MetricsMixin():
         predictions = predictions.argmax(axis=-1)
         # predicted captions are decoded into strings using GPT-2 tokenizer
         decoded_predictions = self.tokenizer.batch_decode(predictions, skip_special_tokens=True)
-
+        del predictions
         # the token ID -100 indicates the end of the sequence.
         # Replaces all -100 values with the id of the padding token in the tokeniezer
         labels = np.where(labels != -100, labels, self.tokenizer.pad_token_id)
         decoded_labels = self.tokenizer.batch_decode(labels, skip_special_tokens=True)
-
+        del labels
         rouge = rouge_metric.compute(predictions=decoded_predictions,
                                      references=decoded_labels,
                                      use_stemmer=True)  # returns a dict
@@ -50,6 +53,7 @@ class MetricsMixin():
         results.update((bleu))
         return results
 
+# cached "processed_cache_10000_val.arrow",
 
 class DataSetMixin():
     def processed_dataset(self, ds):
@@ -58,7 +62,7 @@ class DataSetMixin():
             function=self.preprocess_fn,
             batched=True,
             remove_columns=ds['train'].column_names,
-            # cache_file_name="processed_cache.arrow" name of the file where the processed data is to be cached
+            #cache_file_names="processed_cache_10000_val.arrow" #name of the file where the processed data is to be cached
             # batch_size=50,
             # remove_columns=['image_id', 'caption_id', 'caption', 'height', 'width', 'file_name', 'coco_url', 'image_path']
 
@@ -115,6 +119,7 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
         'distilgpt2'
     )
 
+
     # Model config
     def model_config(self):
 
@@ -128,8 +133,8 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
     # I do not freeze any of the decoder layers.
     def freeze_layer(self):
         for name, param in ImageCaptioningModel.model.encoder.named_parameters():
-            # freeze stage 1 and 2 of the Swin encoder.
-            if 'encoder.layer.3' in name:
+            # freeze stage 1  the Swin encoder.
+            if 'encoder.layer.2' in name:
                 break
             param.requires_grad = False
 
@@ -145,7 +150,7 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
         ImageCaptioningModel.model.to(device)
 
         self.model_config()
-        self.freeze_layer()
+        #self.freeze_layer()
         self.processed_dataset = self.processed_dataset(ds)
 
     def __str__(self):
