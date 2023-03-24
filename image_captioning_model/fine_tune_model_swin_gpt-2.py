@@ -8,14 +8,14 @@ import logging
 import torch
 
 from logger_image_captioning import logger
-import  os
-from transformers import TrainingArguments, Trainer, EarlyStoppingCallback
+
+from transformers import TrainingArguments, Trainer, EarlyStoppingCallback, VisionEncoderDecoderModel
 import datasets
 from datasets import DatasetDict, Dataset
 try:
-    from image_captioning_model.model import ImageCaptioningModel
+    from image_captioning_model.model import ImageCaptioningModel,GenerateCaptions
 except ModuleNotFoundError:
-    from model import ImageCaptioningModel
+    from model import ImageCaptioningModel,GenerateCaptions
 
 # Create logger
 logger = logging.getLogger('image_captioning')
@@ -39,6 +39,12 @@ def train_model(COCO_DIR, output_dir,dummy_data=False, device_type='mps'):
 
     logger.info(f'Dataset loaded successfully: {ds}')
 
+
+    def compute_metric():
+        evaluation_metrics = GenerateCaptions(VisionEncoderDecoderModel.from_pretrained('../models/swin_image_captioning'))
+        evaluation_metrics.evaluate_predictions(ds)
+        print()
+    compute_metric()
     # Create instance of the image captioning model
     image_captioning_model = ImageCaptioningModel()
 
@@ -66,6 +72,7 @@ def train_model(COCO_DIR, output_dir,dummy_data=False, device_type='mps'):
         save_strategy='epoch',
         # use_mps_device=True,  # use Apple Silicon
     )
+    #to compute the number of total steps devide the number of datapoints by the batch size and multiply by the number of epochs
 
 
 

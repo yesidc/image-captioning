@@ -1,6 +1,7 @@
 #PYTHONPATH=$PYTHONPATH:./model.py  python generate_captions.py
 
 from transformers import VisionEncoderDecoderModel
+from transformers import pipeline, AutoFeatureExtractor
 
 try:
     from image_captioning_model.model import GenerateCaptions
@@ -10,15 +11,23 @@ except ModuleNotFoundError:
 
 
 # loading model and config from pretrained folder
-finetuned_model = VisionEncoderDecoderModel.from_pretrained('../models/swin_image_captioning')
-generate_captions = GenerateCaptions()
+finetuned_model = VisionEncoderDecoderModel.from_pretrained("/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT")
+generate_captions = GenerateCaptions(finetuned_model)
 
-captions, model_output, img_transformed = generate_captions(
-    finetuned_model, "C:\\Users\\yesid\\Pictures\\soccer.jpg"
+captions = generate_captions.generate_caption('../data/test_data/images'
 )
 print(captions)
 
-# OSError: ../models/swin_image_captioning does not appear to have a file named preprocessor_config.json.
+
+image_to_text = pipeline("image-to-text", model="/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT")
+
+generate_kwargs = {
+    "num_return_sequences":3,
+    #  "num_beams":3,
+    # 'top_k': 10,
+    # 'early_stopping': True,
+    # 'max_length':15,
+}
 
 #transformers==4.23.1
 #
