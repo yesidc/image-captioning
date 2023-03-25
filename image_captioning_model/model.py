@@ -7,9 +7,13 @@ import torch
 import torchvision.transforms as transforms
 import numpy as np
 import evaluate
+from functools import lru_cache
 from IPython.core.display_functions import display
+from joblib import Memory
+import time
 
-
+# to cache on disk the validation data
+mem = Memory(location='../cache_validation', verbose=0)
 # create logger
 logger = logging.getLogger('image_captioning')
 
@@ -94,11 +98,11 @@ class DataProcessing():
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
         ])
-#'/Users/yesidcano/.cache/huggingface/datasets/downloads/extracted/21631c916345f41bcfaf47a2adacd3714e4acfd4c9bcd159b8fdb703ff1cc986/train2017/000000523373.jpg'
+
     def preprocess_fn(self, examples):
         # Swin expects pixel_values instead of input_ids
         examples['pixel_values'] = [self.transform(Image.open(path).convert('RGB')) for path in examples['image_path']]
-        print(examples[0]['image_path'])
+        #print(examples[0]['image_path'])
         # todo set this parameter to the average length of the captions
         tokenized = self.tokenizer(
             examples['caption'], padding='max_length', max_length=50, truncation=True
@@ -167,21 +171,27 @@ class GenerateCaptions(ComputeMetricMixin,DataProcessing):
         self.tuned_model = tuned_model
         super().__init__()
 
+
+
     def read_img_predict(self,path):
-        img = Image.open(path)
-        if img.mode != "RGB":
-            img = Image.open(path).convert('RGB')
-        img_transformed = self.transform(img).unsqueeze(0)
+
+        @mem.cache
+        def process_img(path):
+            img = Image.open(path)
+            if img.mode != "RGB":
+                img = Image.open(path).convert('RGB')
+            return self.transform(img).unsqueeze(0)
+
         # tensor dimensions max_lenght X num_return_sequences, where ij == some_token_id
         # todo use kwargs to pass these parameters
         model_output = self.tuned_model.generate(
-            img_transformed,
-            num_beams=3,
-            max_length=15,
-            early_stopping=True,
-            do_sample=True,
-            top_k=10,
-            num_return_sequences=3,
+            process_img(path),
+            # num_beams=3,
+            # max_length=15,
+            # early_stopping=True,
+            # do_sample=True,
+            # top_k=10,
+            num_return_sequences=1,
         )
         # g is a tensor like this one: tensor([50256,    13,   198,   198,   198,   198,   198,   198,   198, 50256,
         # 50256, 50256, 50256, 50256, 50256])
@@ -192,7 +202,7 @@ class GenerateCaptions(ComputeMetricMixin,DataProcessing):
 
 
     # a helper function to generate captions
-    def generate_caption(self, path, *args, **kwargs):
+    def generate_caption(self, path):
 
 
         if os.path.isdir(path):
@@ -206,20 +216,28 @@ class GenerateCaptions(ComputeMetricMixin,DataProcessing):
         else:
             pass
 
-
-    def evaluate_predictions(self, validation_split):
-        # list of references. Contains nested lists with all captions that belong to a single image
-        self.decoded_predictions = []
-        self.decoded_labels = []
+    @lru_cache(maxsize=None)
+    def group_data_per_id(self,validation_split):
         groups = {}
         # group images per img_id
         for i in range(validation_split.shape[0]):
             img_id = validation_split[i]['image_id']
             if img_id not in groups:
                 groups[img_id] = {
-                    'index': [] # list of indexes where the same image occurs
+                    'index': []  # list of indexes where the same image occurs
                 }
             groups[img_id]['index'].append(i)
+        return groups
+
+    def evaluate_predictions(self, validation_split):
+        # list of references. Contains nested lists with all captions that belong to a single image
+        self.decoded_predictions = []
+        self.decoded_labels = []
+
+        start_time = time.time()
+        groups = self.group_data_per_id(validation_split)
+        end_time = time.time()
+        logger.debug(f'Time taken to group the validation data: {end_time - start_time}')
 
         for k in groups.keys():
             reference_captions = []
