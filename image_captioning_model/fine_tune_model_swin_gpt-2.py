@@ -50,7 +50,7 @@ def train_model(COCO_DIR, output_dir, dummy_data=False, device_type='mps'):
     training_arg = TrainingArguments(
         output_dir=output_dir,  # dicts output
         overwrite_output_dir=True,
-        num_train_epochs=5,
+        num_train_epochs=2,
         per_device_train_batch_size=10,  # training batch size
         per_device_eval_batch_size=10,  # evaluation batch size
         load_best_model_at_end=True,

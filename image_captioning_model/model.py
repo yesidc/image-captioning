@@ -11,6 +11,7 @@ from functools import lru_cache
 from IPython.core.display_functions import display
 from joblib import Memory
 import time
+from tqdm import tqdm
 
 # to cache on disk the validation data
 mem = Memory(location='../cache_validation', verbose=0)
@@ -173,7 +174,8 @@ class GenerateCaptions(ComputeMetricMixin,DataProcessing):
 
 
 
-    def read_img_predict(self,path):
+    def read_img_predict(self,path, evaluate):
+        #Only cache if evaluate is True
 
         @mem.cache
         def process_img(path):
@@ -185,7 +187,7 @@ class GenerateCaptions(ComputeMetricMixin,DataProcessing):
         # tensor dimensions max_lenght X num_return_sequences, where ij == some_token_id
         # todo use kwargs to pass these parameters
         model_output = self.tuned_model.generate(
-            process_img(path),
+            process_img(path) if evaluate else process_img.func(path),
             # num_beams=3,
             # max_length=15,
             # early_stopping=True,
@@ -202,17 +204,24 @@ class GenerateCaptions(ComputeMetricMixin,DataProcessing):
 
 
     # a helper function to generate captions
-    def generate_caption(self, path):
 
+    def generate_caption(self, path, evaluate=True):
+        """Generate captions for a single image or a directory of images
+        :param path: path to a single image or a directory of images
+        :param evaluate: if True, cache the transformed images.
+        :return: a list of captions
+        """
 
         if os.path.isdir(path):
             self.decoded_predictions = []
             for root, dirs, files in os.walk(path):
-                for file in files:
-                    self.decoded_predictions.append(self.read_img_predict(os.path.join(root, file)))
+                for file in tqdm (files):
+                    self.decoded_predictions.append(self.read_img_predict(os.path.join(root, file), evaluate))
+
+            return self.decoded_predictions
 
         elif os.path.isfile(path):
-            return self.read_img_predict(path)
+            return self.read_img_predict(path, evaluate)
         else:
             pass
 
@@ -240,7 +249,7 @@ class GenerateCaptions(ComputeMetricMixin,DataProcessing):
         end_time = time.time()
         logger.debug(f'Time taken to group the validation data: {end_time - start_time}')
 
-        for k in groups.keys():
+        for k in tqdm(groups.keys()):
             reference_captions = []
             self.decoded_predictions.append(self.generate_caption(validation_split[groups[k]['index'][0]]['image_path'])[0])
             # iterate across all the datapoints with the same img_id and extract all captions for a single image
