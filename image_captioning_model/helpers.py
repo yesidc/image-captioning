@@ -2,6 +2,7 @@ import os
 import glob
 import time
 import logging
+import datasets
 from transformers import TrainerCallback, VisionEncoderDecoderModel
 
 from image_captioning_model.model import GenerateCaptions
@@ -10,21 +11,15 @@ from image_captioning_model.model import GenerateCaptions
 # Create logger
 logger = logging.getLogger('image_captioning')
 
-# def get_last_epoch(directory_path):
-#
-#
-#     # Use glob to find all subdirectories within the directory_path
-#     all_subdirs = glob.glob(os.path.join(directory_path, "*"))
-#
-#     # Filter the subdirectories to only include folders
-#     all_subdirs = [f for f in all_subdirs if os.path.isdir(f)]
-#
-#     # Sort the folders by creation time and get the latest folder
-#     latest_folder = max(all_subdirs, key=os.path.getctime)
-#
-#     # Print the path to the latest folder
-#     print("Path to last epoch directory: ", latest_folder)
-#     return latest_folder
+def load_dataset(COCO_DIR, dummy_data=False):
+
+    # Database
+    if dummy_data:
+        ds = datasets.load_dataset("ydshieh/coco_dataset_script", "2017", data_dir="./dummy_data/")
+    else:
+        ds = datasets.load_dataset("ydshieh/coco_dataset_script", "2017", data_dir=COCO_DIR)
+    return ds
+
 
 class CustomCallbackStrategy(TrainerCallback):
     def __init__(self,output_dir,validation, trainer, *args,**kwargs ):

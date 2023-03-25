@@ -2,7 +2,7 @@
 import logging
 import time
 from transformers import VisionEncoderDecoderModel
-import datasets
+from helpers import load_dataset
 
 try:
     from image_captioning_model.model import GenerateCaptions
@@ -13,27 +13,29 @@ except ModuleNotFoundError:
 logger = logging.getLogger('image_captioning')
 
 
-def generate_captions_and_evaluate(path_to_finetuned_model, path_to_data, evaluate=False):
+def generate_captions_and_evaluate(path_to_finetuned_model, path_to_data, evaluate=False, dummy_data=False):
     # loading model and config from pretrained folder
     finetuned_model = VisionEncoderDecoderModel.from_pretrained(path_to_finetuned_model)
     generate_captions = GenerateCaptions(finetuned_model)
     if evaluate:
-        ds = datasets.load_dataset("ydshieh/coco_dataset_script", "2017", data_dir=path_to_data)
+        ds = load_dataset(path_to_data, dummy_data=dummy_data)
         ds = ds['validation']
         start_time = time.time()
-        logger.info(f'COMPUTING METRICS FOR: {path_to_data}')
-        generate_captions.evaluate_predictions(ds)
+        logger.info(f'COMPUTING METRICS using dataset: {ds}. Transformed images will be cached.')
+        generate_captions.evaluate_predictions(ds,batch_size=70)
         end_time = time.time()
         logger.info(f'TIME ELAPSED: {end_time - start_time}')
         logger.info(f'METRICS COMPUTED: {generate_captions.results}')
     else:
-        captions = generate_captions.generate_caption(path_to_data, evaluate)
+        captions = generate_captions.generate_caption(path_to_data)
         print(captions)
 
 
 # generate_captions_and_evaluate(path_to_finetuned_model='/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT', path_to_data='../data/test_data/images')
 generate_captions_and_evaluate(path_to_finetuned_model='/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT',
-                               path_to_data='/Users/yesidcano/repos/image-captioning/data/coco', evaluate=True)
+                               path_to_data='../data/test_data/images', evaluate=False, dummy_data=False)
+
+#path_to_data='/Users/yesidcano/repos/image-captioning/data/coco'
 
 # # loading model and config from pretrained folder
 

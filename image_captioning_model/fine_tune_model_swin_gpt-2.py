@@ -6,11 +6,8 @@
 import logging
 from helpers import CustomCallbackStrategy
 from logger_image_captioning import logger
-import time
 from transformers import TrainingArguments, Trainer, EarlyStoppingCallback, VisionEncoderDecoderModel
-import datasets
-from datasets import DatasetDict, Dataset
-
+from helpers import load_dataset
 try:
     from image_captioning_model.model import ImageCaptioningModel, GenerateCaptions
 except ModuleNotFoundError:
@@ -25,16 +22,13 @@ logger = logging.getLogger('image_captioning')
 def train_model(COCO_DIR, output_dir, dummy_data=False, device_type='mps'):
     """
     Trains an image captioning model
-    Args:
-        dummy_data: Whether to train using the full COCO dataset or to test the pipeline using a small sample of the data.
-        device: Str. mps or cuda
+    :param COCO_DIR: path to the COCO dataset
+    :param output_dir: path to the output directory
+    :param dummy_data: if True, uses a dummy dataset
+    :param device_type: device type to use for training
     """
 
-    # Database
-    if dummy_data:
-        ds = datasets.load_dataset("ydshieh/coco_dataset_script", "2017", data_dir="./dummy_data/")
-    else:
-        ds = datasets.load_dataset("ydshieh/coco_dataset_script", "2017", data_dir=COCO_DIR)
+    ds = load_dataset(COCO_DIR, dummy_data)
 
     logger.info(f'Dataset loaded successfully: {ds}')
 
