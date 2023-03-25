@@ -231,6 +231,7 @@ class GenerateCaptions(ComputeMetricMixin,DataProcessing):
 
     def evaluate_predictions(self, validation_split):
         # list of references. Contains nested lists with all captions that belong to a single image
+        logging.getLogger("transformers").setLevel(logging.ERROR)
         self.decoded_predictions = []
         self.decoded_labels = []
 
@@ -247,3 +248,4 @@ class GenerateCaptions(ComputeMetricMixin,DataProcessing):
                 reference_captions.append(validation_split[c]['caption'])
             self.decoded_labels.append(reference_captions)
         self.compute_metric()
+        logging.getLogger("transformers").setLevel(logging.DEBUG)
