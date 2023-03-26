@@ -21,11 +21,14 @@ def load_dataset(COCO_DIR, dummy_data=False):
     return ds
 
 
+
+
 class CustomCallbackStrategy(TrainerCallback):
     def __init__(self,output_dir,validation, trainer, *args,**kwargs ):
         self.output_dir = output_dir
         self.validation = validation
         self.trainer= trainer
+
 
 
     def on_epoch_end(self, args, state, control, **kwargs):
@@ -34,18 +37,13 @@ class CustomCallbackStrategy(TrainerCallback):
         control.should_save = True  # ensure that the model is saved at the end of the epoch
         # self.trainer = state.trainer
         self.trainer.save_model(args.output_dir)  # save the model checkpoint using the Trainer instance
-
+        # load the model checkpoint to compute the evaluation metrics
         evaluation_metrics = GenerateCaptions(
             VisionEncoderDecoderModel.from_pretrained(self.output_dir))
 
-     # evaluation_metrics = GenerateCaptions(
-     #        VisionEncoderDecoderModel.from_pretrained(get_last_epoch(self.output_dir)))
-     #
-
-
-
         start_time = time.time()
-        evaluation_metrics.evaluate_predictions(self.validation)
+        # compute the evaluation metrics on the validation set
+        evaluation_metrics.evaluate_predictions(self.validation, args.eval_batch_size)
         end_time = time.time()
         logger.debug(f'Time taken to compute metrics: {end_time - start_time}')
         logger.info(f"Metric's results: {evaluation_metrics.results}")

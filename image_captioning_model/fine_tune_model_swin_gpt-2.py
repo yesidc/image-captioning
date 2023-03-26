@@ -81,7 +81,10 @@ def train_model(COCO_DIR, output_dir, dummy_data=False, device_type='mps'):
     # Check that the model is on the GPU
     logger.info(
         f'Model is on the GPU {next(image_captioning_model.model.parameters()).device}. STARTING TRAINING')  # should print "cuda:0 / mps:0" if on GPU
-    custom_callback = CustomCallbackStrategy(output_dir, ds['validation'], trainer)
+    custom_callback = CustomCallbackStrategy(output_dir=output_dir,
+                                             validation=ds['validation'],
+                                             trainer=trainer)
+
     trainer.add_callback(custom_callback)
     trainer.train()
 
@@ -89,7 +92,7 @@ def train_model(COCO_DIR, output_dir, dummy_data=False, device_type='mps'):
     trainer.save_model()
 
     # Save the tokenizer: saves these files preprocessor_config.json, vocab.json special_tokens.json merges.txt
-    image_captioning_model.tokenizer.save_pretrained('../models/swin_image_captioning')
+    image_captioning_model.tokenizer.save_pretrained(output_dir)
 
 
 if __name__ == '__main__':
