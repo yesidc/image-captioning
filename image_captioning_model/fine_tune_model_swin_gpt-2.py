@@ -19,16 +19,16 @@ logger = logging.getLogger('image_captioning')
 
 # set HF_HOME=D:\huggingface-cache  then run the script on a separate command python myscript
 
-def train_model(COCO_DIR, output_dir, dummy_data=False, device_type='mps'):
+def train_model(PATH_DATASET, output_dir, dummy_data=False, device_type='mps', dataset_type=None):
     """
     Trains an image captioning model
-    :param COCO_DIR: path to the COCO dataset
+    :param PATH_DATASET: path to the COCO dataset
     :param output_dir: path to the output directory
     :param dummy_data: if True, uses a dummy dataset
     :param device_type: device type to use for training
     """
 
-    ds = load_dataset(COCO_DIR, dummy_data)
+    ds = load_dataset(PATH_DATASET=PATH_DATASET, dummy_data=dummy_data, dataset_type=dataset_type)
 
     logger.info(f'Dataset loaded successfully: {ds}')
 
@@ -74,7 +74,7 @@ def train_model(COCO_DIR, output_dir, dummy_data=False, device_type='mps'):
     )
 
     logger.info('Starting trainer.evaluate()')
-    # trainer.evaluate()
+    trainer.evaluate()
 
     # Resume fine-tuning from the last checkpoint
     # trainer.train(resume_from_checkpoint=True)
@@ -89,16 +89,17 @@ def train_model(COCO_DIR, output_dir, dummy_data=False, device_type='mps'):
     trainer.train()
 
     logger.info('Finished fine tuning the model')
-    trainer.save_model()
+    #trainer.save_model()
 
     # Save the tokenizer: saves these files preprocessor_config.json, vocab.json special_tokens.json merges.txt
     image_captioning_model.tokenizer.save_pretrained(output_dir)
 
 
 if __name__ == '__main__':
-    train_model(COCO_DIR='../data/coco', dummy_data=True,
-                device_type='mps', output_dir='../models/swin_NO_F_GPT_image_captioning')
+    train_model(PATH_DATASET='/Users/yesidcano/repos/image-captioning/data/flicker_8k', dummy_data=False,
+                device_type='mps', output_dir='../models/swin_NO_F_GPT_image_captioning', dataset_type='flickr_8k')
 
+#COCO_DIR='../data/coco'
 # if __name__ == '__main__':
 #     # todo change device to cuda
 #     train_model(COCO_DIR='C:\\Users\\yesid\\Documents\\repos\\image-captioning\\data\\coco', dummy_data=False,
