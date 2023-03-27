@@ -123,12 +123,7 @@ class DataProcessing():
 
 class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
     # Model
-    model = VisionEncoderDecoderModel.from_encoder_decoder_pretrained(
-        'microsoft/swin-tiny-patch4-window7-224',
-        'distilgpt2'
-    )
-
-    # model = VisionEncoderDecoderModel.from_pretrained('../models/swin_image_captioning/checkpoint-100')
+    model= None
 
     # Model config
     def model_config(self):
@@ -148,7 +143,18 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
                 break
             param.requires_grad = False
 
-    def __call__(self, ds, device_type, *args, **kwargs):
+    def __call__(self, ds, device_type,start_from_checkpoint=False, path_to_checkpoint=None, *args, **kwargs):
+
+        if start_from_checkpoint:
+            #'../models/swin_image_captioning/checkpoint-100'
+            ImageCaptioningModel.model = VisionEncoderDecoderModel.from_pretrained(path_to_checkpoint)
+            logger.info('Model loaded from checkpoint')
+        else:
+            ImageCaptioningModel.model = VisionEncoderDecoderModel.from_encoder_decoder_pretrained(
+                'microsoft/swin-tiny-patch4-window7-224',
+                'distilgpt2'
+            )
+
 
         if device_type == 'mps':
             device = torch.device("mps")

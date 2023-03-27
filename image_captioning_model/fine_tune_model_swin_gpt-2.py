@@ -20,7 +20,13 @@ logger = logging.getLogger('image_captioning')
 
 # set HF_HOME=D:\huggingface-cache  then run the script on a separate command python myscript
 
-def train_model(PATH_DATASET, output_dir, dummy_data=False, device_type='mps', dataset_type=None):
+def train_model(PATH_DATASET, output_dir,
+                dummy_data=False,
+                device_type='mps',
+                dataset_type=None,
+                start_from_checkpoint=False,
+                path_to_checkpoint=None,
+                resume_from_checkpoint=False):
     """
     Trains an image captioning model
     :param PATH_DATASET: path to the COCO dataset
@@ -36,7 +42,7 @@ def train_model(PATH_DATASET, output_dir, dummy_data=False, device_type='mps', d
     # Create instance of the image captioning model
     image_captioning_model = ImageCaptioningModel()
 
-    image_captioning_model(ds, device_type)
+    image_captioning_model(ds=ds, device_type=device_type,start_from_checkpoint=start_from_checkpoint,path_to_checkpoint=path_to_checkpoint)
     logger.info(image_captioning_model)
 
     # Training Procedure:
@@ -77,19 +83,26 @@ def train_model(PATH_DATASET, output_dir, dummy_data=False, device_type='mps', d
     logger.info('Starting trainer.evaluate()')
     trainer.evaluate()
 
-    # Resume fine-tuning from the last checkpoint
-    # trainer.train(resume_from_checkpoint=True)
+
     # Check that the model is on the GPU
     logger.info(
         f'Model is on the GPU {next(image_captioning_model.model.parameters()).device}. STARTING TRAINING')  # should print "cuda:0 / mps:0" if on GPU
+
+    # compute metrics on the validation set
     custom_callback = CustomCallbackStrategy(output_dir=output_dir,
                                              validation=ds['validation'],
                                              trainer=trainer)
-
     trainer.add_callback(custom_callback)
-    trainer.train()
+
+    if resume_from_checkpoint:
+        logger.info('Resuming training from checkpoint')
+        trainer.train(resume_from_checkpoint=True)
+    else:
+        trainer.train()
 
     logger.info('Finished fine tuning the model')
+
+
     # trainer.save_model()
 
     # Save the tokenizer: saves these files preprocessor_config.json, vocab.json special_tokens.json merges.txt
@@ -97,8 +110,14 @@ def train_model(PATH_DATASET, output_dir, dummy_data=False, device_type='mps', d
 
 
 if __name__ == '__main__':
-    train_model(PATH_DATASET='/Users/yesidcano/repos/image-captioning/data/flickr30k_images', dummy_data=False,
-                device_type='mps', output_dir='../models/swin_NO_F_GPT_image_captioning', dataset_type='flickr_30k')
+    train_model(PATH_DATASET='/Users/yesidcano/repos/image-captioning/data/flickr30k_images',
+                dummy_data=False,
+                device_type='mps',
+                output_dir='../models/swin_NO_F_GPT_image_captioning',
+                dataset_type='flickr_30k',
+                start_from_checkpoint=False,
+                path_to_checkpoint=None,
+                resume_from_checkpoint=False)
 
 # COCO_DIR='../data/coco'
 # if __name__ == '__main__':
