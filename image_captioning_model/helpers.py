@@ -52,7 +52,7 @@ def load_create_ds_flickr_8k(PATH_DATASET):
     contain_images_captions(PATH_DATASET, "images", "Flickr8k.token.txt")
     caption_file = PATH_DATASET + "/Flickr8k.token.txt"
     path_images = PATH_DATASET + "/images"
-    with open(caption_file, "r") as f:
+    with open(caption_file, "r", encoding='utf-8') as f:
         reader = csv.reader(f, delimiter="\t")
         for row in reader:
             image_name, caption = row
@@ -86,7 +86,7 @@ def load_crate_dsflickr_30k(PATH_DATASET):
     caption_file = PATH_DATASET + "/results.csv"
     path_images = PATH_DATASET + "/flickr30k_images"
     drop_first = True
-    with open(caption_file, newline='') as f:
+    with open(caption_file, newline='',encoding='utf-8') as f:
         reader = csv.reader(f, delimiter="\t")
         for row in reader:
             row_data = row[0].split('|')
