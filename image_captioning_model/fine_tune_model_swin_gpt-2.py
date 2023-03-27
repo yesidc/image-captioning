@@ -8,6 +8,7 @@ from helpers import CustomCallbackStrategy
 from logger_image_captioning import logger
 from transformers import TrainingArguments, Trainer, EarlyStoppingCallback, VisionEncoderDecoderModel
 from helpers import load_dataset
+
 try:
     from image_captioning_model.model import ImageCaptioningModel, GenerateCaptions
 except ModuleNotFoundError:
@@ -30,7 +31,7 @@ def train_model(PATH_DATASET, output_dir, dummy_data=False, device_type='mps', d
 
     ds = load_dataset(PATH_DATASET=PATH_DATASET, dummy_data=dummy_data, dataset_type=dataset_type)
 
-    logger.info(f'Dataset loaded successfully: {ds}')
+    logger.info(f'Dataset {dataset_type} loaded successfully: {ds}')
 
     # Create instance of the image captioning model
     image_captioning_model = ImageCaptioningModel()
@@ -89,17 +90,17 @@ def train_model(PATH_DATASET, output_dir, dummy_data=False, device_type='mps', d
     trainer.train()
 
     logger.info('Finished fine tuning the model')
-    #trainer.save_model()
+    # trainer.save_model()
 
     # Save the tokenizer: saves these files preprocessor_config.json, vocab.json special_tokens.json merges.txt
     image_captioning_model.tokenizer.save_pretrained(output_dir)
 
 
 if __name__ == '__main__':
-    train_model(PATH_DATASET='/Users/yesidcano/repos/image-captioning/data/flicker_8k', dummy_data=False,
-                device_type='mps', output_dir='../models/swin_NO_F_GPT_image_captioning', dataset_type='flickr_8k')
+    train_model(PATH_DATASET='/Users/yesidcano/repos/image-captioning/data/flickr30k_images', dummy_data=False,
+                device_type='mps', output_dir='../models/swin_NO_F_GPT_image_captioning', dataset_type='flickr_30k')
 
-#COCO_DIR='../data/coco'
+# COCO_DIR='../data/coco'
 # if __name__ == '__main__':
 #     # todo change device to cuda
 #     train_model(COCO_DIR='C:\\Users\\yesid\\Documents\\repos\\image-captioning\\data\\coco', dummy_data=False,

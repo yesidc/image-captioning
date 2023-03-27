@@ -12,25 +12,44 @@ from image_captioning_model.model import GenerateCaptions
 logger = logging.getLogger('image_captioning')
 
 
+def contain_images_captions(PATH_DATASET, img_directory, captions_file):
+    if not os.path.isdir(os.path.join(PATH_DATASET, img_directory)):
+        raise FileNotFoundError(
+            f"Directory {img_directory} not found in {PATH_DATASET}. Save all images to a directory called {img_directory} ")
+
+    if not os.path.isfile(os.path.join(PATH_DATASET, captions_file)):
+        raise FileNotFoundError(f"File {captions_file} not found in directory")
+
+
+def generate_ds(data):
+    ds = datasets.Dataset.from_pandas(pd.DataFrame(data=data))
+    # Split the dataset into train and validation
+    train_testvalid = ds.train_test_split(test_size=0.1)
+    ds = DatasetDict({'train': train_testvalid['train'], 'validation': train_testvalid['test']})
+    return ds
+
+
+def file_exists(image_name, image_path):
+    if not os.path.isfile(os.path.join(image_path)):
+        logger.error(f'The file "{image_name}" does not exists in "{image_path}"')
+        return False
+    return True
+
+
 def load_create_ds_flickr_8k(PATH_DATASET):
     """
     Load Flickr 8k dataset
     :param PATH_DATASET: Path to the dataset. The directory should contain the following files: `Flickr8k.token.txt` and `images` directory.
-    :return: A dataset object
+    :return: A DatasetDict object
     """
     # Load Flickr 8k dataset
     # Load captions from file
 
     data = []
-    MIN_CAPTION = 20
+    MIN_CAPTION = 10
     # IMAGES_PATH = '../data/flicker_8k/images'
     # caption_file = "../data/flicker_8k/Flickr8k.token.txt"
-    if not os.path.isdir(os.path.join(PATH_DATASET, "images")):
-        raise FileNotFoundError("Directory 'images' not found in directory. Save all images to a directory called "
-                                "`images`.")
-
-    if not os.path.isfile(os.path.join(PATH_DATASET, "Flickr8k.token.txt")):
-        raise FileNotFoundError("File 'Flickr8k.token.txt' not found in directory")
+    contain_images_captions(PATH_DATASET, "images", "Flickr8k.token.txt")
     caption_file = PATH_DATASET + "/Flickr8k.token.txt"
     path_images = PATH_DATASET + "/images"
     with open(caption_file, "r") as f:
@@ -41,39 +60,31 @@ def load_create_ds_flickr_8k(PATH_DATASET):
             image_id = os.path.splitext(image_name)[0]
             image_name = image_name.split("#")[0]
             image_path = os.path.join(path_images, image_name)
-            if  not os.path.isfile(os.path.join(image_path)):
-                print(f'The file "{image_name}" does not exists in directory "{image_name}"')
+
+            if not file_exists(image_name, image_path):
                 continue
 
-
-
-
-            if image_name.endswith("jpg"):
-
-                caption = caption.replace(' .', '').strip()
-                tokens = caption.strip().split()
-                if len(tokens) < MIN_CAPTION :
-                    #print(caption)
-                    continue
+            caption = caption.replace(' .', '').strip()
+            tokens = caption.strip().split()
+            if len(tokens) < MIN_CAPTION:
+                # print(caption)
+                continue
 
             data.append({'image_id': image_id, 'image_path': image_path, 'caption': caption})
 
-    ds = datasets.Dataset.from_pandas(pd.DataFrame(data=data))
-    # Split the dataset into train and validation
-    train_testvalid = ds.train_test_split(test_size=0.1)
-    ds =  DatasetDict({'train':train_testvalid['train'], 'validation':train_testvalid['test'] })
+    return generate_ds(data)
 
 
-    return ds
-
-#'/Users/yesidcano/repos/image-captioning/data/flicker_8k/images/2258277193_586949ec62.jpg.1'
 def load_crate_dsflickr_30k(PATH_DATASET):
     # Load captions from file
-    import csv
+
     data = []
     MIN_CAPTION = 5
-    IMAGES_PATH = '../data/flicker_30k/images'
-    caption_file = "/Users/yesidcano/Downloads/results.csv"
+    # IMAGES_PATH = '../data/flicker_30k/images'
+    # caption_file = "/Users/yesidcano/Downloads/results.csv"
+    contain_images_captions(PATH_DATASET, "flickr30k_images", "results.csv")
+    caption_file = PATH_DATASET + "/results.csv"
+    path_images = PATH_DATASET + "/flickr30k_images"
     drop_first = True
     with open(caption_file, newline='') as f:
         reader = csv.reader(f, delimiter="\t")
@@ -82,13 +93,16 @@ def load_crate_dsflickr_30k(PATH_DATASET):
             try:
 
                 image_name, caption = row_data[0], row_data[2]
-                # Each image name has a suffix `#(caption_number)`
+
             except IndexError:
                 print(f'Corrupted datapoint-------------{row_data}--------------')
                 continue
 
             image_id = os.path.splitext(image_name)[0]
-            image_path = os.path.join(IMAGES_PATH, image_name.strip())
+            image_path = os.path.join(path_images, image_name.strip())
+
+            if not file_exists(image_name, image_path):
+                continue
 
             caption = caption.replace(' .', '').strip()
             caption = caption.strip()
@@ -100,11 +114,10 @@ def load_crate_dsflickr_30k(PATH_DATASET):
 
             data.append({'image_id': image_id, 'image_path': image_path, 'caption': caption})
 
-    ds = datasets.Dataset.from_pandas(pd.DataFrame(data=data))
-    return ds
+    return generate_ds(data)
 
 
-def load_dataset(PATH_DATASET, dataset_type=None,dummy_data=False):
+def load_dataset(PATH_DATASET, dataset_type=None, dummy_data=False):
     # Database
     if dummy_data:
         ds = datasets.load_dataset("ydshieh/coco_dataset_script", "2017", data_dir="./dummy_data/")
