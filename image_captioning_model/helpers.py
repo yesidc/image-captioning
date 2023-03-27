@@ -79,7 +79,7 @@ def load_crate_dsflickr_30k(PATH_DATASET):
     # Load captions from file
 
     data = []
-    MIN_CAPTION = 5
+    MIN_CAPTION = 35
     # IMAGES_PATH = '../data/flicker_30k/images'
     # caption_file = "/Users/yesidcano/Downloads/results.csv"
     contain_images_captions(PATH_DATASET, "flickr30k_images", "results.csv")
@@ -155,4 +155,5 @@ class CustomCallbackStrategy(TrainerCallback):
         end_time = time.time()
         logger.debug(f'Time taken to compute metrics: {end_time - start_time}')
         logger.info(f"Metric's results: {evaluation_metrics.results}")
+        del evaluation_metrics
         logger.info(f"End of epoch {state.epoch}.")

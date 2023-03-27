@@ -51,7 +51,7 @@ def train_model(PATH_DATASET, output_dir,
     training_arg = TrainingArguments(
         output_dir=output_dir,  # dicts output
         overwrite_output_dir=True,
-        num_train_epochs=2,
+        num_train_epochs=1,
         per_device_train_batch_size=10,  # training batch size
         per_device_eval_batch_size=10,  # evaluation batch size
         load_best_model_at_end=True,
@@ -110,14 +110,16 @@ def train_model(PATH_DATASET, output_dir,
 
 
 if __name__ == '__main__':
+    
     train_model(PATH_DATASET='/Users/yesidcano/repos/image-captioning/data/flickr30k_images',
                 dummy_data=False,
                 device_type='mps',
                 output_dir='../models/swin_NO_F_GPT_image_captioning',
                 dataset_type='flickr_30k',
-                start_from_checkpoint=False,
-                path_to_checkpoint=None,
+                start_from_checkpoint=True,
+                path_to_checkpoint='/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT',
                 resume_from_checkpoint=False)
+
 
 # COCO_DIR='../data/coco'
 # if __name__ == '__main__':
