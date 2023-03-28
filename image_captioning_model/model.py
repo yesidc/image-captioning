@@ -143,11 +143,8 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
                 break
             param.requires_grad = False
 
-    def __call__(self, ds,
-                 device_type,
-                 start_from_checkpoint=False,
-                 path_to_checkpoint=None,
-                 process_data=True):
+    def __call__(self, ds, device_type,start_from_checkpoint=False,
+                 path_to_checkpoint=None):
 
         if start_from_checkpoint:
             #'../models/swin_image_captioning/checkpoint-100'
@@ -171,10 +168,6 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
 
         self.model_config()
         # self.freeze_layer()
-        if process_data:
-            self.processed_dataset = self.processed_dataset(ds)
-        else:
-            self.processed_dataset = ds
         self.processed_dataset = self.processed_dataset(ds)
 
     def __str__(self):

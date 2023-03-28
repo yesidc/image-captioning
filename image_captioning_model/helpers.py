@@ -79,7 +79,7 @@ def load_crate_dsflickr_30k(PATH_DATASET):
     # Load captions from file
 
     data = []
-    MIN_CAPTION = 35
+    MIN_CAPTION = 40
     # IMAGES_PATH = '../data/flicker_30k/images'
     # caption_file = "/Users/yesidcano/Downloads/results.csv"
     contain_images_captions(PATH_DATASET, "flickr30k_images", "results.csv")

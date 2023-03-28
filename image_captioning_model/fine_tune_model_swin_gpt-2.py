@@ -4,11 +4,13 @@
 
 
 import logging
+import os
+
 from helpers import CustomCallbackStrategy
 from logger_image_captioning import logger
-from transformers import TrainingArguments, Trainer, EarlyStoppingCallback, VisionEncoderDecoderModel
+from transformers import TrainingArguments, Trainer, EarlyStoppingCallback
 from helpers import load_dataset
-
+import shutil
 try:
     from image_captioning_model.model import ImageCaptioningModel
     from image_captioning_model.generate_captions import generate_captions_and_evaluate
@@ -28,20 +30,17 @@ def train_model(output_dir,
                 device_type='mps',
                 start_from_checkpoint=False,
                 path_to_checkpoint=None,
-                resume_from_checkpoint=False,
-                process_data=True):
+                resume_from_checkpoint=False,):
     """
     Trains an image captioning model
-    :param PATH_DATASET: path to the COCO dataset
     :param output_dir: path to the output directory
-    :param dummy_data: if True, uses a dummy dataset
     :param device_type: device type to use for training
     """
 
     # Create instance of the image captioning model
     image_captioning_model = ImageCaptioningModel()
 
-    image_captioning_model(ds=ds, device_type=device_type,start_from_checkpoint=start_from_checkpoint,path_to_checkpoint=path_to_checkpoint,process_data=process_data)
+    image_captioning_model(ds=ds, device_type=device_type,start_from_checkpoint=start_from_checkpoint,path_to_checkpoint=path_to_checkpoint)
     logger.info(image_captioning_model)
 
     # Training Procedure:
@@ -106,41 +105,48 @@ def train_model(output_dir,
 
     # Save the tokenizer: saves these files preprocessor_config.json, vocab.json special_tokens.json merges.txt
     image_captioning_model.tokenizer.save_pretrained(output_dir)
-    return image_captioning_model.processed_dataset
+
+    del image_captioning_model
+
 
 
 if __name__ == '__main__':
-    num_epochs = 3
+    num_epochs = 2
     PATH_DATASET = '/Users/yesidcano/repos/image-captioning/data/flickr30k_images'
+    path_to_checkpoint = '/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT'
     dummy_data = False
     dataset_type = 'flickr_30k'
     output_dir = '../models/swin_NO_F_GPT_image_captioning'
+    cache_checkpoint_dir = '../models/checkpoints' # directory to store checkpoints
     ds = load_dataset(PATH_DATASET=PATH_DATASET, dummy_data=dummy_data, dataset_type=dataset_type)
     logger.info(f'Dataset {dataset_type} loaded successfully: {ds}')
     validation_data = ds['validation']
-    ds = train_model(device_type='mps',
-                ds=ds,
-                output_dir=output_dir,
-                start_from_checkpoint=True,
-                path_to_checkpoint='/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT',
-                resume_from_checkpoint=False)
 
-    # compute metrics on the validation set
-    generate_captions_and_evaluate(path_to_finetuned_model=output_dir,
-                                   validation_data=validation_data, evaluate=False, dummy_data=False)
+
     for i in range(num_epochs):
-        logger.info(f'Starting epoch {i}')
+        logger.warning(f'Starting epoch {i}. Weights loaded from {path_to_checkpoint}')
         train_model(device_type='mps',
                     ds=ds,
                     output_dir=output_dir,
                     start_from_checkpoint=True,
-                    path_to_checkpoint='/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT',
-                    resume_from_checkpoint=False,
-                    process_data=False)
+                    path_to_checkpoint=path_to_checkpoint,
+                    resume_from_checkpoint=False)
+
 
         # compute metrics on the validation set
         generate_captions_and_evaluate(path_to_finetuned_model=output_dir,
-                                       validation_data=validation_data, evaluate=False, dummy_data=False)
+                                       validation_data=validation_data, evaluate=True, dummy_data=dummy_data)
+        # move checkpoint directory to a new directory with the epoch number
+        checkpoint_dir = None
+        for dirpath, dirnames, filenames in os.walk(output_dir):
+            for dirname in dirnames:
+                if dirname.startswith("checkpoint"):
+                    checkpoint_dir = os.path.join(dirpath, dirname)
+                    break
+            if checkpoint_dir is not None:
+                new_checkpoint_dir = shutil.move(output_dir, f'{cache_checkpoint_dir}/epoch_{i}')
+                path_to_checkpoint = os.path.abspath(new_checkpoint_dir)
+
         logger.info(f'Finished epoch {i}')
 
 # COCO_DIR='../data/coco'
