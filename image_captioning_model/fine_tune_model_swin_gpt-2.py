@@ -10,9 +10,12 @@ from transformers import TrainingArguments, Trainer, EarlyStoppingCallback, Visi
 from helpers import load_dataset
 
 try:
-    from image_captioning_model.model import ImageCaptioningModel, GenerateCaptions
+    from image_captioning_model.model import ImageCaptioningModel
+    from image_captioning_model.generate_captions import generate_captions_and_evaluate
 except ModuleNotFoundError:
-    from model import ImageCaptioningModel, GenerateCaptions
+    from model import ImageCaptioningModel
+    from generate_captions import generate_captions_and_evaluate
+
 
 # Create logger
 logger = logging.getLogger('image_captioning')
@@ -20,13 +23,13 @@ logger = logging.getLogger('image_captioning')
 
 # set HF_HOME=D:\huggingface-cache  then run the script on a separate command python myscript
 
-def train_model(PATH_DATASET, output_dir,
-                dummy_data=False,
+def train_model(output_dir,
+                ds,
                 device_type='mps',
-                dataset_type=None,
                 start_from_checkpoint=False,
                 path_to_checkpoint=None,
-                resume_from_checkpoint=False):
+                resume_from_checkpoint=False,
+                process_data=True):
     """
     Trains an image captioning model
     :param PATH_DATASET: path to the COCO dataset
@@ -35,14 +38,10 @@ def train_model(PATH_DATASET, output_dir,
     :param device_type: device type to use for training
     """
 
-    ds = load_dataset(PATH_DATASET=PATH_DATASET, dummy_data=dummy_data, dataset_type=dataset_type)
-
-    logger.info(f'Dataset {dataset_type} loaded successfully: {ds}')
-
     # Create instance of the image captioning model
     image_captioning_model = ImageCaptioningModel()
 
-    image_captioning_model(ds=ds, device_type=device_type,start_from_checkpoint=start_from_checkpoint,path_to_checkpoint=path_to_checkpoint)
+    image_captioning_model(ds=ds, device_type=device_type,start_from_checkpoint=start_from_checkpoint,path_to_checkpoint=path_to_checkpoint,process_data=process_data)
     logger.info(image_captioning_model)
 
     # Training Procedure:
@@ -89,10 +88,10 @@ def train_model(PATH_DATASET, output_dir,
         f'Model is on the GPU {next(image_captioning_model.model.parameters()).device}. STARTING TRAINING')  # should print "cuda:0 / mps:0" if on GPU
 
     # compute metrics on the validation set
-    custom_callback = CustomCallbackStrategy(output_dir=output_dir,
-                                             validation=ds['validation'],
-                                             trainer=trainer)
-    trainer.add_callback(custom_callback)
+    # custom_callback = CustomCallbackStrategy(output_dir=output_dir,
+    #                                          validation=ds['validation'],
+    #                                          trainer=trainer)
+    # trainer.add_callback(custom_callback)
 
     if resume_from_checkpoint:
         logger.info('Resuming training from checkpoint')
@@ -103,23 +102,46 @@ def train_model(PATH_DATASET, output_dir,
     logger.info('Finished fine tuning the model')
 
 
-    # trainer.save_model()
+    trainer.save_model()
 
     # Save the tokenizer: saves these files preprocessor_config.json, vocab.json special_tokens.json merges.txt
     image_captioning_model.tokenizer.save_pretrained(output_dir)
+    return image_captioning_model.processed_dataset
 
 
 if __name__ == '__main__':
-    
-    train_model(PATH_DATASET='/Users/yesidcano/repos/image-captioning/data/flickr30k_images',
-                dummy_data=False,
-                device_type='mps',
-                output_dir='../models/swin_NO_F_GPT_image_captioning',
-                dataset_type='flickr_30k',
+    num_epochs = 3
+    PATH_DATASET = '/Users/yesidcano/repos/image-captioning/data/flickr30k_images'
+    dummy_data = False
+    dataset_type = 'flickr_30k'
+    output_dir = '../models/swin_NO_F_GPT_image_captioning'
+    ds = load_dataset(PATH_DATASET=PATH_DATASET, dummy_data=dummy_data, dataset_type=dataset_type)
+    logger.info(f'Dataset {dataset_type} loaded successfully: {ds}')
+    validation_data = ds['validation']
+    ds = train_model(device_type='mps',
+                ds=ds,
+                output_dir=output_dir,
                 start_from_checkpoint=True,
                 path_to_checkpoint='/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT',
                 resume_from_checkpoint=False)
 
+    # compute metrics on the validation set
+    generate_captions_and_evaluate(path_to_finetuned_model=output_dir,
+                                   validation_data=validation_data, evaluate=False, dummy_data=False)
+    for i in range(num_epochs):
+        logger.info(f'Starting epoch {i}')
+        train_model(device_type='mps',
+                    ds=ds,
+                    output_dir=output_dir,
+                    start_from_checkpoint=True,
+                    path_to_checkpoint='/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT',
+                    resume_from_checkpoint=False,
+                    process_data=False)
+
+        # compute metrics on the validation set
+        generate_captions_and_evaluate(path_to_finetuned_model=output_dir,
+                                       validation_data=validation_data, evaluate=False, dummy_data=False)
+        logger.info(f'Finished epoch {i}')
 
 # COCO_DIR='../data/coco'
 # if __name__ == '__main__':

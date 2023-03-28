@@ -13,13 +13,31 @@ except ModuleNotFoundError:
 logger = logging.getLogger('image_captioning')
 
 
-def generate_captions_and_evaluate(path_to_finetuned_model, path_to_data, evaluate=False, dummy_data=False):
+def generate_captions_and_evaluate(path_to_finetuned_model,
+                                   path_to_data=None,
+                                   validation_data=None,
+                                   evaluate=False,
+                                   dummy_data=False):
+    """
+
+    :param path_to_finetuned_model:
+    :param path_to_data:
+    :param validation_data:
+    :param evaluate:
+    :param dummy_data:
+    :return:
+    """
     # loading model and config from pretrained folder
     finetuned_model = VisionEncoderDecoderModel.from_pretrained(path_to_finetuned_model)
     generate_captions = GenerateCaptions(finetuned_model)
     if evaluate:
-        ds = load_dataset(path_to_data, dummy_data=dummy_data)
-        ds = ds['validation']
+        if path_to_data:
+            ds = load_dataset(path_to_data, dummy_data=dummy_data)
+            ds = ds['validation']
+        elif validation_data:
+            ds = validation_data
+        else:
+            raise ValueError('Either path_to_data or validation_data must be provided')
         start_time = time.time()
         logger.info(f'COMPUTING METRICS using dataset: {ds}. Transformed images will be cached.')
         generate_captions.evaluate_predictions(ds,batch_size=70)
