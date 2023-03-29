@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-# PYTORCH_ENABLE_MPS_FALLBACK=1 PYTHONPATH=$PYTHONPATH:./model.py python fine_tune_model_swin_gpt-2.py
+# PYTORCH_ENABLE_MPS_FALLBACK=1 PYTHONPATH=$PYTHONPATH:./model.py python fine_tune_model_swin_gpt-2.py --> to use MPS run this command
 # HF_HOME='D:\huggingface-cache' PYTHONPATH=$PYTHONPATH:./model.py python fine_tune_model_swin_gpt-2.py
 
 
 import logging
 import os
+from transformers.optimization import get_constant_schedule_with_warmup
+import torch.optim
 
 from helpers import CustomCallbackStrategy
 from logger_image_captioning import logger
@@ -53,19 +55,28 @@ def train_model(output_dir,
         per_device_train_batch_size=10,  # training batch size
         per_device_eval_batch_size=10,  # evaluation batch size
         load_best_model_at_end=True,
+        optim='adamw_torch',
+
+        learning_rate=5e-6,
         # warmup_steps=10000,
         # dataloader_num_workers=24,  # this machine has 24 cpu cores
         logging_dir='./logs',  # directory for storing logs
-        logging_steps=10,
+        logging_steps=1,
         # fp16=True,
         log_level='info',
         evaluation_strategy='epoch',
         save_strategy='epoch',
-        # use_mps_device=True,  # use Apple Silicon
+        #use_mps_device=True,  # use Apple Silicon
 
     )
     # to compute the number of total steps devide the number of datapoints by the batch size and multiply by the number of epochs
 
+    # define optimizer
+    optimizer = torch.optim.AdamW(image_captioning_model.model.parameters(),
+                                  lr=training_arg.learning_rate,
+                                  betas=(0.9, 0.98),)
+    scheduler = get_constant_schedule_with_warmup(optimizer, num_warmup_steps=training_arg.warmup_steps)
+    # Create trainer
     trainer = Trainer(
         model=image_captioning_model.model,
         args=training_arg,
@@ -73,11 +84,14 @@ def train_model(output_dir,
         train_dataset=image_captioning_model.processed_dataset['train'],
         eval_dataset=image_captioning_model.processed_dataset['validation'],
         callbacks=[EarlyStoppingCallback(early_stopping_patience=5)],
+
+
         # stop training if validation loss stops improving
 
         # data_collator=default_data_collator
     )
-
+    trainer.lr_scheduler = scheduler
+    trainer.optimizer = optimizer
     logger.info('Starting trainer.evaluate()')
     trainer.evaluate()
 
@@ -111,12 +125,12 @@ def train_model(output_dir,
 
 
 if __name__ == '__main__':
-    num_epochs = 2
+    num_epochs = 3
     PATH_DATASET = '/Users/yesidcano/repos/image-captioning/data/flickr30k_images'
-    path_to_checkpoint = '/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT'
-    dummy_data = False
+    path_to_checkpoint = '/Users/yesidcano/repos/image-captioning/models/checkpoints/epoch_0/checkpoint-8'
+    dummy_data = True
     dataset_type = 'flickr_30k'
-    output_dir = '../models/swin_NO_F_GPT_image_captioning'
+    output_dir = '../models/swin_gpt-2_finetuned'
     cache_checkpoint_dir = '../models/checkpoints' # directory to store checkpoints
     ds = load_dataset(PATH_DATASET=PATH_DATASET, dummy_data=dummy_data, dataset_type=dataset_type)
     logger.info(f'Dataset {dataset_type} loaded successfully: {ds}')
