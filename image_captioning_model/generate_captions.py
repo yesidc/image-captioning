@@ -5,9 +5,9 @@ from transformers import VisionEncoderDecoderModel
 from helpers import load_dataset
 
 try:
-    from image_captioning_model.model import GenerateCaptions
+    from image_captioning_model.model import GenerateEvaluateCaptions
 except ModuleNotFoundError:
-    from model import GenerateCaptions
+    from model import GenerateEvaluateCaptions
 
 # create logger
 logger = logging.getLogger('image_captioning')
@@ -16,6 +16,7 @@ logger = logging.getLogger('image_captioning')
 def generate_captions_and_evaluate(path_to_finetuned_model,
                                    path_to_data=None,
                                    validation_data=None,
+                                   dataset_type=None,
                                    evaluate=False,
                                    dummy_data=False):
     """
@@ -29,10 +30,10 @@ def generate_captions_and_evaluate(path_to_finetuned_model,
     """
     # loading model and config from pretrained folder
     finetuned_model = VisionEncoderDecoderModel.from_pretrained(path_to_finetuned_model)
-    generate_captions = GenerateCaptions(finetuned_model)
+    generate_captions = GenerateEvaluateCaptions(finetuned_model)
     if evaluate:
         if path_to_data:
-            ds = load_dataset(path_to_data, dummy_data=dummy_data)
+            ds = load_dataset(PATH_DATASET=path_to_data, dummy_data=dummy_data,dataset_type=dataset_type)
             ds = ds['validation']
         elif validation_data:
             ds = validation_data
@@ -44,14 +45,19 @@ def generate_captions_and_evaluate(path_to_finetuned_model,
         end_time = time.time()
         logger.info(f'TIME ELAPSED: {end_time - start_time}')
         logger.info(f'METRICS COMPUTED: {generate_captions.results}')
+        return generate_captions.results
     else:
         captions = generate_captions.generate_caption(path_to_data)
         print(captions)
 
+#
+# generate_captions_and_evaluate(path_to_finetuned_model='/Users/yesidcano/Library/Mobile Documents/com~apple~CloudDocs/models-tuned/swin-gpt-0-2-frozen/checkpoint-236704',
+#                                path_to_data='/Users/yesidcano/repos/image-captioning/data/coco',
+#                                dataset_type='coco',
+#                                evaluate=True)
 
-# generate_captions_and_evaluate(path_to_finetuned_model='/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT', path_to_data='../data/test_data/images')
-generate_captions_and_evaluate(path_to_finetuned_model='/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT',
-                               path_to_data='../data/test_data/images', evaluate=False, dummy_data=False)
+# generate_captions_and_evaluate(path_to_finetuned_model='/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT',
+#                                path_to_data='../data/test_data/images', evaluate=False, dummy_data=False)
 
 #path_to_data='/Users/yesidcano/repos/image-captioning/data/coco'
 
