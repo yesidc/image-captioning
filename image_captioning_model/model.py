@@ -70,10 +70,11 @@ class MetricsMixin():
         self.compute_metric()
         return self.results
 
-
+# Define a mixin class to preprocess the data
 class DataSetMixin():
     def processed_dataset(self, ds):
         logger.info('Start data preprocessing (mapping operation)')
+        # apply the preprocessing function to the dataset
         processed_dataset = ds.map(
             function=self.preprocess_fn,
             batched=True,
@@ -89,6 +90,9 @@ class DataSetMixin():
 
 
 class DataProcessing():
+    """
+    A class that encapsulates the data preprocessing
+    """
     def __init__(self):
         # gpt-2 tokenizer
         self.tokenizer = GPT2TokenizerFast.from_pretrained('distilgpt2')
@@ -104,6 +108,7 @@ class DataProcessing():
         ])
 
     def preprocess_fn(self, examples):
+
         # Swin expects pixel_values instead of input_ids
         examples['pixel_values'] = [self.transform(Image.open(path).convert('RGB')) for path in examples['image_path']]
         # print(examples[0]['image_path'])
@@ -122,6 +127,9 @@ class DataProcessing():
 
 
 class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
+    """
+    A class that encapsulates the entire image captioning model
+    """
     # Model
     model= None
 
@@ -175,7 +183,7 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
         return f'This model uses a pre-trained encoder of type {type(ImageCaptioningModel.model.encoder)} and pre-trained decoder of type {type(ImageCaptioningModel.model.decoder)}'
 
 
-class GenerateCaptions(ComputeMetricMixin, DataProcessing):
+class GenerateEvaluateCaptions(ComputeMetricMixin, DataProcessing):
 
     def __init__(self, tuned_model):
 

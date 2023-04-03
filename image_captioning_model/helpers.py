@@ -6,7 +6,7 @@ import datasets
 from datasets import Dataset, DatasetDict
 from transformers import TrainerCallback, VisionEncoderDecoderModel
 import pandas as pd
-from image_captioning_model.model import GenerateCaptions
+from image_captioning_model.model import GenerateEvaluateCaptions
 
 # Create logger
 logger = logging.getLogger('image_captioning')
@@ -146,7 +146,7 @@ class CustomCallbackStrategy(TrainerCallback):
         # self.trainer = state.trainer
         self.trainer.save_model(args.output_dir)  # save the model checkpoint using the Trainer instance
         # load the model checkpoint to compute the evaluation metrics
-        evaluation_metrics = GenerateCaptions(
+        evaluation_metrics = GenerateEvaluateCaptions(
             VisionEncoderDecoderModel.from_pretrained(self.output_dir))
 
         start_time = time.time()

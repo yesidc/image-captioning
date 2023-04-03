@@ -5,10 +5,9 @@
 
 import logging
 import os
+import json
 from transformers.optimization import get_constant_schedule_with_warmup
 import torch.optim
-
-from helpers import CustomCallbackStrategy
 from logger_image_captioning import logger
 from transformers import TrainingArguments, Trainer, EarlyStoppingCallback
 from helpers import load_dataset
@@ -129,6 +128,7 @@ if __name__ == '__main__':
     PATH_DATASET = '/Users/yesidcano/repos/image-captioning/data/flickr30k_images'
     path_to_checkpoint = '/Users/yesidcano/repos/image-captioning/models/checkpoints/epoch_0/checkpoint-8'
     dummy_data = True
+    start_from_checkpoint = False
     dataset_type = 'flickr_30k'
     output_dir = '../models/swin_gpt-2_finetuned'
     cache_checkpoint_dir = '../models/checkpoints' # directory to store checkpoints
@@ -142,14 +142,16 @@ if __name__ == '__main__':
         train_model(device_type='mps',
                     ds=ds,
                     output_dir=output_dir,
-                    start_from_checkpoint=True,
+                    start_from_checkpoint=start_from_checkpoint,
                     path_to_checkpoint=path_to_checkpoint,
                     resume_from_checkpoint=False)
 
 
         # compute metrics on the validation set
-        generate_captions_and_evaluate(path_to_finetuned_model=output_dir,
+        metric_results = generate_captions_and_evaluate(path_to_finetuned_model=output_dir,
                                        validation_data=validation_data, evaluate=True, dummy_data=dummy_data)
+        with open(f'{output_dir}/metrics.json', 'w') as f:
+            json.dump(metric_results, f)
         # move checkpoint directory to a new directory with the epoch number
         checkpoint_dir = None
         for dirpath, dirnames, filenames in os.walk(output_dir):
@@ -160,6 +162,8 @@ if __name__ == '__main__':
             if checkpoint_dir is not None:
                 new_checkpoint_dir = shutil.move(output_dir, f'{cache_checkpoint_dir}/epoch_{i}')
                 path_to_checkpoint = os.path.abspath(new_checkpoint_dir)
+                # continues training from the last checkpoint
+                start_from_checkpoint = True
 
         logger.info(f'Finished epoch {i}')
 
