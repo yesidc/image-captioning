@@ -147,7 +147,7 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
     def freeze_layer(self):
         for name, param in ImageCaptioningModel.model.encoder.named_parameters():
             # freeze stage 1  the Swin encoder.
-            if 'encoder.layer.2' in name:
+            if 'encoder.layer.3' in name:
                 break
             param.requires_grad = False
 
@@ -175,7 +175,7 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
         ImageCaptioningModel.model.to(device)
 
         self.model_config()
-        # self.freeze_layer()
+        self.freeze_layer()
         self.processed_dataset = self.processed_dataset(ds)
 
     def __str__(self):

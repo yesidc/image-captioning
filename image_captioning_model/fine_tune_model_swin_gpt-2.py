@@ -50,13 +50,13 @@ def train_model(output_dir,
     training_arg = TrainingArguments(
         output_dir=output_dir,  # dicts output
         overwrite_output_dir=True,
-        num_train_epochs=1,
+        num_train_epochs=3,
         per_device_train_batch_size=10,  # training batch size
         per_device_eval_batch_size=10,  # evaluation batch size
         load_best_model_at_end=True,
-        optim='adamw_torch',
+        # optim='adamw_torch',
 
-        learning_rate=5e-6,
+        # learning_rate=5e-6,
         # warmup_steps=10000,
         # dataloader_num_workers=24,  # this machine has 24 cpu cores
         logging_dir='./logs',  # directory for storing logs
@@ -65,16 +65,16 @@ def train_model(output_dir,
         log_level='info',
         evaluation_strategy='epoch',
         save_strategy='epoch',
-        #use_mps_device=True,  # use Apple Silicon
+        use_mps_device=True,  # use Apple Silicon
 
     )
     # to compute the number of total steps devide the number of datapoints by the batch size and multiply by the number of epochs
 
     # define optimizer
-    optimizer = torch.optim.AdamW(image_captioning_model.model.parameters(),
-                                  lr=training_arg.learning_rate,
-                                  betas=(0.9, 0.98),)
-    scheduler = get_constant_schedule_with_warmup(optimizer, num_warmup_steps=training_arg.warmup_steps)
+    # optimizer = torch.optim.AdamW(image_captioning_model.model.parameters(),
+    #                               lr=training_arg.learning_rate,
+    #                               betas=(0.9, 0.98),)
+    # scheduler = get_constant_schedule_with_warmup(optimizer, num_warmup_steps=training_arg.warmup_steps)
     # Create trainer
     trainer = Trainer(
         model=image_captioning_model.model,
@@ -89,8 +89,8 @@ def train_model(output_dir,
 
         # data_collator=default_data_collator
     )
-    trainer.lr_scheduler = scheduler
-    trainer.optimizer = optimizer
+    # trainer.lr_scheduler = scheduler
+    # trainer.optimizer = optimizer
     logger.info('Starting trainer.evaluate()')
     trainer.evaluate()
 
@@ -124,48 +124,53 @@ def train_model(output_dir,
 
 
 if __name__ == '__main__':
-    num_epochs = 3
+    # num_epochs = 3
     PATH_DATASET = '/Users/yesidcano/repos/image-captioning/data/flickr30k_images'
-    path_to_checkpoint = '/Users/yesidcano/repos/image-captioning/models/checkpoints/epoch_0/checkpoint-8'
-    dummy_data = True
-    start_from_checkpoint = False
+    path_to_checkpoint = '/Users/yesidcano/Library/Mobile Documents/com~apple~CloudDocs/models-tuned/fixed-learning rate/from_epoch_10_fixed_l_r_froze_2_e_1'
+    dummy_data = False
+    start_from_checkpoint = True
     dataset_type = 'flickr_30k'
-    output_dir = '../models/swin_gpt-2_finetuned'
+    output_dir = '../models/swin_gpt-2-image-captioning'
     cache_checkpoint_dir = '../models/checkpoints' # directory to store checkpoints
     ds = load_dataset(PATH_DATASET=PATH_DATASET, dummy_data=dummy_data, dataset_type=dataset_type)
     logger.info(f'Dataset {dataset_type} loaded successfully: {ds}')
-    validation_data = ds['validation']
-
-
-    for i in range(num_epochs):
-        logger.warning(f'Starting epoch {i}. Weights loaded from {path_to_checkpoint}')
-        train_model(device_type='mps',
-                    ds=ds,
-                    output_dir=output_dir,
-                    start_from_checkpoint=start_from_checkpoint,
-                    path_to_checkpoint=path_to_checkpoint,
-                    resume_from_checkpoint=False)
-
-
-        # compute metrics on the validation set
-        metric_results = generate_captions_and_evaluate(path_to_finetuned_model=output_dir,
-                                       validation_data=validation_data, evaluate=True, dummy_data=dummy_data)
-        with open(f'{output_dir}/metrics.json', 'w') as f:
-            json.dump(metric_results, f)
-        # move checkpoint directory to a new directory with the epoch number
-        checkpoint_dir = None
-        for dirpath, dirnames, filenames in os.walk(output_dir):
-            for dirname in dirnames:
-                if dirname.startswith("checkpoint"):
-                    checkpoint_dir = os.path.join(dirpath, dirname)
-                    break
-            if checkpoint_dir is not None:
-                new_checkpoint_dir = shutil.move(output_dir, f'{cache_checkpoint_dir}/epoch_{i}')
-                path_to_checkpoint = os.path.abspath(new_checkpoint_dir)
-                # continues training from the last checkpoint
-                start_from_checkpoint = True
-
-        logger.info(f'Finished epoch {i}')
+    # validation_data = ds['validation']
+    train_model(device_type='mps',
+                ds=ds,
+                output_dir=output_dir,
+                start_from_checkpoint=start_from_checkpoint,
+                path_to_checkpoint=path_to_checkpoint,
+                resume_from_checkpoint=False)
+    #
+    # for i in range(num_epochs):
+    #     logger.warning(f'Starting epoch {i}. Weights loaded from {path_to_checkpoint}')
+    #     train_model(device_type='mps',
+    #                 ds=ds,
+    #                 output_dir=output_dir,
+    #                 start_from_checkpoint=start_from_checkpoint,
+    #                 path_to_checkpoint=path_to_checkpoint,
+    #                 resume_from_checkpoint=False)
+    #
+    #
+    #     # compute metrics on the validation set
+    #     metric_results = generate_captions_and_evaluate(path_to_finetuned_model=output_dir,
+    #                                    validation_data=validation_data, evaluate=True, dummy_data=dummy_data)
+    #     with open(f'{output_dir}/metrics.json', 'w') as f:
+    #         json.dump(metric_results, f)
+    #     # move checkpoint directory to a new directory with the epoch number
+    #     checkpoint_dir = None
+    #     for dirpath, dirnames, filenames in os.walk(output_dir):
+    #         for dirname in dirnames:
+    #             if dirname.startswith("checkpoint"):
+    #                 checkpoint_dir = os.path.join(dirpath, dirname)
+    #                 break
+    #         if checkpoint_dir is not None:
+    #             new_checkpoint_dir = shutil.move(output_dir, f'{cache_checkpoint_dir}/epoch_{i}')
+    #             path_to_checkpoint = os.path.abspath(new_checkpoint_dir)
+    #             # continues training from the last checkpoint
+    #             start_from_checkpoint = True
+    #
+    #     logger.info(f'Finished epoch {i}')
 
 # COCO_DIR='../data/coco'
 # if __name__ == '__main__':

@@ -6,7 +6,7 @@ import datasets
 from datasets import Dataset, DatasetDict
 from transformers import TrainerCallback, VisionEncoderDecoderModel
 import pandas as pd
-from image_captioning_model.model import GenerateEvaluateCaptions
+from model import GenerateEvaluateCaptions
 
 # Create logger
 logger = logging.getLogger('image_captioning')
@@ -24,7 +24,7 @@ def contain_images_captions(PATH_DATASET, img_directory, captions_file):
 def generate_ds(data):
     ds = datasets.Dataset.from_pandas(pd.DataFrame(data=data))
     # Split the dataset into train and validation
-    train_testvalid = ds.train_test_split(test_size=0.1)
+    train_testvalid = ds.train_test_split(test_size=0.05)
     ds = DatasetDict({'train': train_testvalid['train'], 'validation': train_testvalid['test']})
     return ds
 
@@ -79,7 +79,7 @@ def load_crate_dsflickr_30k(PATH_DATASET):
     # Load captions from file
 
     data = []
-    MIN_CAPTION = 40
+    MIN_CAPTION = 14
     # IMAGES_PATH = '../data/flicker_30k/images'
     # caption_file = "/Users/yesidcano/Downloads/results.csv"
     contain_images_captions(PATH_DATASET, "flickr30k_images", "results.csv")
