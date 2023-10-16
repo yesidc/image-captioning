@@ -1,4 +1,3 @@
-# PYTHONPATH=$PYTHONPATH:./model.py  python generate_captions.py
 import logging
 import time
 from transformers import VisionEncoderDecoderModel
@@ -50,45 +49,4 @@ def generate_captions_and_evaluate(path_to_finetuned_model,
         captions = generate_captions.generate_caption(path_to_data)
         print(captions)
 
-#
-# generate_captions_and_evaluate(path_to_finetuned_model='/Users/yesidcano/Library/Mobile Documents/com~apple~CloudDocs/models-tuned/swin-gpt-0-2-frozen/checkpoint-236704',
-#                                path_to_data='/Users/yesidcano/repos/image-captioning/data/coco',
-#                                dataset_type='coco',
-#                                evaluate=True)
 
-# generate_captions_and_evaluate(path_to_finetuned_model='/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT',
-#                                path_to_data='../data/coco_2017/images', evaluate=False, dummy_data=False)
-
-#path_to_data='/Users/yesidcano/repos/image-captioning/data/coco'
-
-# # loading model and config from pretrained folder
-
-# image_to_text = pipeline("image-to-text", model="/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT")
-#
-# generate_kwargs = {
-#     "num_return_sequences":3,
-#     #  "num_beams":3,
-#     # 'top_k': 10,
-#     # 'early_stopping': True,
-#     # 'max_length':15,
-# }
-
-# transformers==4.23.1
-#
-# from transformers import pipeline, AutoFeatureExtractor
-#
-#
-# image_to_text = pipeline("image-to-text", model="../models/swin_image_captioning")
-#
-# generate_kwargs = {
-#     "num_return_sequences":3,
-#      "num_beams":3,
-#     'top_k': 10,
-#     'early_stopping': True,
-#     'max_length':15,
-# }
-#
-#
-#
-# p = image_to_text("C:\\Users\\yesid\\Pictures\\black.png", generate_kwargs=generate_kwargs)
-# print()

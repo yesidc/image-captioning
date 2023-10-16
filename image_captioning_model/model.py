@@ -46,7 +46,7 @@ class ComputeMetricMixin():
         self.decoded_labels = None
 
 
-class MetricsMixin():
+class MetricsMixin(ComputeMetricMixin):
 
     def metrics(self, pred_labels):
         """
@@ -63,7 +63,7 @@ class MetricsMixin():
         self.decoded_predictions = self.tokenizer.batch_decode(predictions, skip_special_tokens=True)
 
         # the token ID -100 indicates the end of the sequence.
-        # Replaces all -100 values with the id of the padding token in the tokeniezer
+        # Replaces all -100 values with the id of the padding token in the tokenizer
         labels = np.where(labels != -100, labels, self.tokenizer.pad_token_id)
         self.decoded_labels = self.tokenizer.batch_decode(labels, skip_special_tokens=True)
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # PYTORCH_ENABLE_MPS_FALLBACK=1 PYTHONPATH=$PYTHONPATH:./model.py python train.py --> to use MPS run this command
-# HF_HOME='D:\huggingface-cache' PYTHONPATH=$PYTHONPATH:./model.py python train.py
-
 
 import argparse
 from logger_image_captioning import logger
@@ -19,10 +17,6 @@ except ModuleNotFoundError:
 # Create logger
 logger = logging.getLogger('image_captioning')
 
-
-
-
-# set HF_HOME=D:\huggingface-cache  then run the script on a separate command python myscript
 
 def train_model(output_dir,
                 ds,
@@ -63,32 +57,23 @@ def train_model(output_dir,
         log_level='info',
         evaluation_strategy='epoch',
         save_strategy='epoch',
-        use_mps_device=True,  # use Apple Silicon
+        use_mps_device=False,  # use Apple Silicon
 
     )
-    # to compute the number of total steps devide the number of datapoints by the batch size and multiply by the number of epochs
 
-    # define optimizer
-    # optimizer = torch.optim.AdamW(image_captioning_model.model.parameters(),
-    #                               lr=training_arg.learning_rate,
-    #                               betas=(0.9, 0.98),)
-    # scheduler = get_constant_schedule_with_warmup(optimizer, num_warmup_steps=training_arg.warmup_steps)
     # Create trainer
     trainer = Trainer(
         model=image_captioning_model.model,
         args=training_arg,
-        # compute_metrics=image_captioning_model.metrics,
+        compute_metrics=image_captioning_model.metrics,
         train_dataset=image_captioning_model.processed_dataset['train'],
         eval_dataset=image_captioning_model.processed_dataset['validation'],
         callbacks=[EarlyStoppingCallback(early_stopping_patience=5)],
-
-
         # stop training if validation loss stops improving
 
         # data_collator=default_data_collator
     )
-    # trainer.lr_scheduler = scheduler
-    # trainer.optimizer = optimizer
+
     logger.info('Starting trainer.evaluate()')
     trainer.evaluate()
 
@@ -97,12 +82,7 @@ def train_model(output_dir,
     logger.info(
         f'Model is on the GPU {next(image_captioning_model.model.parameters()).device}. STARTING TRAINING')  # should print "cuda:0 / mps:0" if on GPU
 
-    # compute metrics on the validation set
-    # custom_callback = CustomCallbackStrategy(output_dir=output_dir,
-    #                                          validation=ds['validation'],
-    #                                          trainer=trainer)
-    # trainer.add_callback(custom_callback)
-
+    # Start training
     if resume_from_checkpoint:
         logger.info('Resuming training from checkpoint')
         trainer.train(resume_from_checkpoint=True)
