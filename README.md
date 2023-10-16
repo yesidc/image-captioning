@@ -1,4 +1,5 @@
 # Image Captioning Model
+(Under construction)
 
 This repository contains the code for training an End-to-end Transformer based image captioning model, where both the encoder and decoder use standard pre-trained transformer architectures.
 
@@ -24,7 +25,7 @@ Distilgpt2
 4. Train the model
 
 ## Dataset
-The image captioning model can be trained on the following datasets:
+The image captioning model can be trained and subsequently evaluated on the following datasets:
 
 - [COCO](https://cocodataset.org/#home)
 - [Flickr8k](https://www.kaggle.com/adityajn105/flickr8k)
@@ -51,8 +52,21 @@ python train.py
 --resume_from_checkpoint: Boolean, resume from checkpoint. Default is False.
 --output_dir: path to the output directory. default='../models/swin_gpt-2-image-captioning'
 --dataset_type: type of dataset. Default is 'coco'. Other option is 'flickr_8k', flickr_30k
+--num_train_epochs: number of training epochs. Default is 3.
 
 ```
+
+### Trainer
+
+This work uses the `Transformers` `Trainer` class designed to fine-tune pretrained transformer based models.
+  
+
+To conduct the fine-tuning phase, the `Trainer` class was instantiated with a pretrained model, metrics, training and validation data, and a set of training arguments.
+The pretrained model is an instance of the `VisionEncoderDecoderModel` class. This class, `VisionEncoderDecoderModel`, allows initializing an image-to-text-sequence model where the encoder is a pretrained transformer-based vision autoencoding model and the decoder is a backbone of a pretrained text autoregressive model. Note that `VisionEncoderDecoderModel` class randomly initializes the cross-attention weights, hence these must be fine-tuned on a downstream task. 
+
+The training and evaluation split used  to generate an instance of the `Trainer` class consist of two DataSet objects with two features: pixel values and labels. 
+
+Lastly, to initialize the `Trainer` an instance of the `TrainingArguments` class is provided.The hyperparameters needed to fine-tune the model, which are subsequently consumed by the `Trainer` class, are set via an instance of the `TrainingArguments` class. For this project, most of the hyperparameters (e.g., learning rate, loss function) used for fine-tuning are provided by the training API.
 
 
 ## Metrics
@@ -60,8 +74,7 @@ The model is evaluated on the following metrics:
 - BLEU
 - ROUGE
 
-## Example Results:
-{'rouge1': 0.2304, 'rouge2': 0.0321, 'rougeL': 0.2042, 'rougeLsum': 0.2047, 'bleu': 0.0198, 'precisions': [0.2169, 0.0324, 0.0076, 0.0028], 'brevity_penalty': 1.0, 'length_ratio': 1.0862, 'translation_length': 945, 'reference_length': 870}
-
+## Logs
+The logs are saved in the `image_captioning_model/image_captioning.log` file.
 ## References
 Liu, Z., Lin, Y., Cao, Y., Hu, H., Wei, Y., Zhang, Z., Lin, S., & Guo, B. (2021). Swin Transformer: Hierarchical Vision Transformer using Shifted Windows. ArXiv. /abs/2103.14030

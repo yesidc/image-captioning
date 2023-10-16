@@ -155,7 +155,6 @@ class ImageCaptioningModel(DataSetMixin, MetricsMixin, DataProcessing):
                  path_to_checkpoint=None):
 
         if start_from_checkpoint:
-            #'../models/swin_image_captioning/checkpoint-100'
             ImageCaptioningModel.model = VisionEncoderDecoderModel.from_pretrained(path_to_checkpoint)
             logger.info('Model loaded from checkpoint')
         else:
