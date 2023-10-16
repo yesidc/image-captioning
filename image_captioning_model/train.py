@@ -1,17 +1,13 @@
 #!/usr/bin/env python
-# PYTORCH_ENABLE_MPS_FALLBACK=1 PYTHONPATH=$PYTHONPATH:./model.py python fine_tune_model_swin_gpt-2.py --> to use MPS run this command
-# HF_HOME='D:\huggingface-cache' PYTHONPATH=$PYTHONPATH:./model.py python fine_tune_model_swin_gpt-2.py
+# PYTORCH_ENABLE_MPS_FALLBACK=1 PYTHONPATH=$PYTHONPATH:./model.py python train.py --> to use MPS run this command
+# HF_HOME='D:\huggingface-cache' PYTHONPATH=$PYTHONPATH:./model.py python train.py
 
 
-import logging
-import os
-import json
-from transformers.optimization import get_constant_schedule_with_warmup
-import torch.optim
+import argparse
 from logger_image_captioning import logger
+import logging
 from transformers import TrainingArguments, Trainer, EarlyStoppingCallback
 from helpers import load_dataset
-import shutil
 try:
     from image_captioning_model.model import ImageCaptioningModel
     from image_captioning_model.generate_captions import generate_captions_and_evaluate
@@ -22,6 +18,8 @@ except ModuleNotFoundError:
 
 # Create logger
 logger = logging.getLogger('image_captioning')
+
+
 
 
 # set HF_HOME=D:\huggingface-cache  then run the script on a separate command python myscript
@@ -124,13 +122,28 @@ def train_model(output_dir,
 
 
 if __name__ == '__main__':
+    # Create parser
+    parser = argparse.ArgumentParser(description='Image Captioning')
+    parser.add_argument('--path_dataset', type=str, default=None, help='Path to the dataset')
+    parser.add_argument('--dummy_data', type=bool, default=False, help='Use dummy data')
+    parser.add_argument('--path_to_checkpoint', type=str, default=None, help='Path to the checkpoint')
+    parser.add_argument('--start_from_checkpoint', type=bool, default=False, help='Start from checkpoint')
+    parser.add_argument('--resume_from_checkpoint', type=bool, default=False, help='Resume from checkpoint')
+    parser.add_argument('--output_dir', type=str, default='../models/swin_gpt-2-image-captioning',
+                        help='Output directory')
+    parser.add_argument('--dataset_type', type=str, default='coco',
+                        help='Type of dataset to use: flickr_8k, flickr_30k, coco')
+
+    args = parser.parse_args()
+
+
     # num_epochs = 3
-    PATH_DATASET = '/Users/yesidcano/repos/image-captioning/data/flickr30k_images'
-    path_to_checkpoint = '/Users/yesidcano/Library/Mobile Documents/com~apple~CloudDocs/models-tuned/fixed-learning rate/from_epoch_10_fixed_l_r_froze_2_e_1'
-    dummy_data = False
-    start_from_checkpoint = True
-    dataset_type = 'flickr_30k'
-    output_dir = '../models/swin_gpt-2-image-captioning'
+    PATH_DATASET = args.path_dataset
+    dummy_data = args.dummy_data
+    path_to_checkpoint = args.path_to_checkpoint
+    start_from_checkpoint = args.start_from_checkpoint
+    dataset_type = args.dataset_type
+    output_dir = args.output_dir
     cache_checkpoint_dir = '../models/checkpoints' # directory to store checkpoints
     ds = load_dataset(PATH_DATASET=PATH_DATASET, dummy_data=dummy_data, dataset_type=dataset_type)
     logger.info(f'Dataset {dataset_type} loaded successfully: {ds}')
@@ -141,41 +154,4 @@ if __name__ == '__main__':
                 start_from_checkpoint=start_from_checkpoint,
                 path_to_checkpoint=path_to_checkpoint,
                 resume_from_checkpoint=False)
-    #
-    # for i in range(num_epochs):
-    #     logger.warning(f'Starting epoch {i}. Weights loaded from {path_to_checkpoint}')
-    #     train_model(device_type='mps',
-    #                 ds=ds,
-    #                 output_dir=output_dir,
-    #                 start_from_checkpoint=start_from_checkpoint,
-    #                 path_to_checkpoint=path_to_checkpoint,
-    #                 resume_from_checkpoint=False)
-    #
-    #
-    #     # compute metrics on the validation set
-    #     metric_results = generate_captions_and_evaluate(path_to_finetuned_model=output_dir,
-    #                                    validation_data=validation_data, evaluate=True, dummy_data=dummy_data)
-    #     with open(f'{output_dir}/metrics.json', 'w') as f:
-    #         json.dump(metric_results, f)
-    #     # move checkpoint directory to a new directory with the epoch number
-    #     checkpoint_dir = None
-    #     for dirpath, dirnames, filenames in os.walk(output_dir):
-    #         for dirname in dirnames:
-    #             if dirname.startswith("checkpoint"):
-    #                 checkpoint_dir = os.path.join(dirpath, dirname)
-    #                 break
-    #         if checkpoint_dir is not None:
-    #             new_checkpoint_dir = shutil.move(output_dir, f'{cache_checkpoint_dir}/epoch_{i}')
-    #             path_to_checkpoint = os.path.abspath(new_checkpoint_dir)
-    #             # continues training from the last checkpoint
-    #             start_from_checkpoint = True
-    #
-    #     logger.info(f'Finished epoch {i}')
 
-# COCO_DIR='../data/coco'
-# if __name__ == '__main__':
-#     # todo change device to cuda
-#     train_model(COCO_DIR='C:\\Users\\yesid\\Documents\\repos\\image-captioning\\data\\coco', dummy_data=False,
-#                 device_type='cuda', output_dir='../models/swin_NO_F_GPT_image_captioning')
-#
-#

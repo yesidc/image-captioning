@@ -57,7 +57,7 @@ def generate_captions_and_evaluate(path_to_finetuned_model,
 #                                evaluate=True)
 
 # generate_captions_and_evaluate(path_to_finetuned_model='/Users/yesidcano/Documents/SWIN-GPT/swin-no-F-GPT',
-#                                path_to_data='../data/test_data/images', evaluate=False, dummy_data=False)
+#                                path_to_data='../data/coco_2017/images', evaluate=False, dummy_data=False)
 
 #path_to_data='/Users/yesidcano/repos/image-captioning/data/coco'
 
